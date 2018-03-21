@@ -406,7 +406,7 @@ gwr.poisson<-function(y,x,regression.points,W1.mat,W2.mat,hatmatrix,tol=1.0e-5, 
      nu <- gw.fitted(x,betas1)
      mu <- exp(nu)
      old.llik <- llik
-     llik <- sum(y*nu - mu - log(gamma(y+1)))
+     llik <- sum(y*nu - mu - lgamma(y+1))
      cat(paste("   ",formatC(it.count,digits=4,width=4),"    ",formatC(llik,digits=4,width=7),"\n"))
      if (abs((old.llik - llik)/llik) < tol) break
      wt2 <- as.numeric(mu)
