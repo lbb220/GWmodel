@@ -1,0 +1,42 @@
+citHeader("To cite GWmodel in publications use:")
+
+citEntry(entry = "Article",
+  title        = "{GWmodel}: An {R} Package for Exploring Spatial Heterogeneity Using Geographically Weighted Models",
+  author       = personList(as.person("Isabella Gollini"),
+                   as.person("Binbin Lu"),
+                   as.person("Martin Charlton"),
+                   as.person("Christopher Brunsdon"),
+                   as.person("Paul Harris")),
+  journal      = "Journal of Statistical Software",
+  year         = "2015",
+  volume       = "63",
+  number       = "17",
+  pages        = "1--50",
+  url          = "http://www.jstatsoft.org/v63/i17/",
+
+  textVersion  =
+  paste("Isabella Gollini, Binbin Lu, Martin Charlton, Christopher Brunsdon, Paul Harris (2015).",
+        "GWmodel: An R Package for Exploring Spatial Heterogeneity Using Geographically Weighted Models.",
+        "Journal of Statistical Software, 63(17), 1-50.",
+        "URL http://www.jstatsoft.org/v63/i17/.")
+)
+
+citEntry(entry = "Article",
+  title        = "The {GWmodel} {R} package: further topics for exploring spatial heterogeneity using geographically weighted models",
+  author       = personList(as.person("Binbin Lu"),
+                   as.person("Paul Harris"),
+                   as.person("Martin Charlton"),
+                   as.person("Christopher Brunsdon")),
+  journal      = "Geo-spatial Information Science",
+  year         = "2014",
+  volume       = "17",
+  number       = "2",
+  pages        = "85--101",
+  url          = "https://www.tandfonline.com/doi/abs/10.1080/10095020.2014.917453",
+
+  textVersion  =
+  paste("Binbin Lu, Paul Harris, Martin Charlton, Christopher Brunsdon (2014).",
+        "The GWmodel R package: further topics for exploring spatial heterogeneity using geographically weighted models.",
+        "Geo-spatial Information Science, 17(2), 85-101.",
+        "URL https://www.tandfonline.com/doi/abs/10.1080/10095020.2014.917453")
+)
