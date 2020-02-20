@@ -500,3 +500,21 @@ RcppExport SEXP GWmodel_scgwr_reg(SEXP xSEXP, SEXP ySEXP, SEXP bwSEXP, SEXP poly
   return __result;
   END_RCPP
 }
+
+//GWmodel_gw_dist
+arma::mat gw_dist(mat dp, mat rp, int focus, double p, double theta, bool longlat, bool rp_given);
+RcppExport SEXP GWmodel_gw_dist(SEXP dpSEXP, SEXP rpSEXP, SEXP focusSEXP, SEXP pSEXP, SEXP thetaSEXP, SEXP longlatSEXP, SEXP rp_givenSEXP) {
+  BEGIN_RCPP
+  Rcpp::RObject __result;
+  Rcpp::RNGScope __rngScope;
+  Rcpp::traits::input_parameter< arma::mat >::type dp(dpSEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type rp(rpSEXP);
+  Rcpp::traits::input_parameter< int >::type focus(focusSEXP);
+  Rcpp::traits::input_parameter< double >::type p(pSEXP);
+  Rcpp::traits::input_parameter< double >::type theta(thetaSEXP);
+  Rcpp::traits::input_parameter< bool >::type longlat(longlatSEXP);
+  Rcpp::traits::input_parameter< bool >::type rp_given(rp_givenSEXP);
+  __result = Rcpp::wrap(gw_dist(dp, rp, focus, p, theta, longlat, rp_given));
+  return __result;
+  END_RCPP
+}

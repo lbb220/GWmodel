@@ -37,6 +37,7 @@ extern SEXP GWmodel_tri_wt_vec(SEXP, SEXP);
 extern SEXP GWmodel_scgwr_pre(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP GWmodel_scgwr_loocv(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP GWmodel_scgwr_reg(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP GWmodel_gw_dist(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 
 
 static const R_CallMethodDef CallEntries[] = {
@@ -74,6 +75,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"GWmodel_scgwr_pre",         (DL_FUNC) &GWmodel_scgwr_pre,         7},
     {"GWmodel_scgwr_loocv",       (DL_FUNC) &GWmodel_scgwr_loocv,       9},
     {"GWmodel_scgwr_reg",         (DL_FUNC) &GWmodel_scgwr_reg,         11},
+    {"GWmodel_gw_dist",           (DL_FUNC) &GWmodel_gw_dist,           7},
     {NULL, NULL, 0}
 };
 

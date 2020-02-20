@@ -144,3 +144,7 @@ scgwr_reg <- function( x, y, bw, poly, G0, Mx0, My0, XtX, XtY, neighbour, parame
 scgwr_loocv <- function(target, x, y, bw, poly, Mx0, My0, XtX, XtY) {
     .Call('GWmodel_scgwr_loocv', PACKAGE = 'GWmodel', target, x, y, bw, poly, Mx0, My0, XtX, XtY)
 }
+
+gw_dist <- function(dp.locat, rp.locat, focus, p, theta, longlat, rp.given) {
+  .Call('GWmodel_gw_dist', PACKAGE = 'GWmodel', dp.locat, rp.locat, focus, p, theta, longlat, rp.given)
+}
