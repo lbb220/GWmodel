@@ -2,112 +2,126 @@
 gwr.model.selection<-function(DeVar=NULL,InDeVars=NULL, data=list(),bw=NULL,approach="CV",
                      adaptive=F,kernel="bisquare",dMat=NULL,p=2, theta=0, longlat=F)
 {
-   if(is.null(DeVar)||!is.character(DeVar)||is.null(InDeVars)||!is.character(InDeVars))
+  if (is.null(DeVar) || !is.character(DeVar) || is.null(InDeVars) || !is.character(InDeVars))
     stop("Input are not correct, please recheck!")
    ##Data points
-  spdf<-data
-  if (!is.null(data))
-  {
-    if (is(data, "Spatial"))
-      {
-        p4s <- proj4string(data)
-        dp.locat<-coordinates(data)
-        data <- as(data, "data.frame")
-      }
-    else
-      {
-        if (!is(data, "data.frame"))
-           stop("Given regression data must be data.frame or Spatial*DataFrame")
-      }
+  spdf <- data
+  if (!is.null(data)) {
+    if (is(data, "Spatial")) {
+      p4s <- proj4string(data)
+      dp.locat <- coordinates(data)
+      data <- as(data, "data.frame")
+    } else {
+      if (!is(data, "data.frame"))
+        stop("Given regression data must be data.frame or Spatial*DataFrame")
+    }
   }
   else stop("No regression data frame is avaiable!")
   #################################################################
-   vars.df<-names(data)
-   dp.n<-nrow(data)
-   var.n<-length(InDeVars)
-   InDeVars.Sub<-InDeVars
-   model.list<-list()
-   GWR.df<-c()
+  vars.df <- names(data)
+  dp.n <- nrow(data)
+  var.n <- length(InDeVars)
+  InDeVars.Sub <- InDeVars
+  model.list <- list()
+  GWR.df <- c()
    
-   if (is.null(dMat))
-    {
-      dMat <- gw.dist(dp.locat=dp.locat, p=p, theta=theta, longlat=longlat)
-    }
+  if (missing(dMat)) {
+    DM.given <- F
+    dMat <- matrix(0, 0, 0)
+  }
+  else if (is.null(dMat) || !is.matrix(dMat)) {
+    DM.given<-F
+    dMat <- matrix(0, 0, 0)
+  }
+  else {
+    DM.given<-T
+    dim.dMat<-dim(dMat)
+    if (dim.dMat[1]!=dp.n||dim.dMat[2]!=dp.n)
+      stop ("Dimensions of dMat are not correct")
+  }
   #vars.idxs<-c()###Record indices used for each model
-   varsindx.list<-list()
-   level.vars<-c()
-   tag<-1
-   adapt<-NULL
-   for (i in 1:var.n)
-  {
-    AICcs<-c()
-    for (j in 1:(var.n-i+1))
-    {
-      vars.j<-c(level.vars,InDeVars.Sub[j])
-      fml<-Generate.formula(DeVar,vars.j)
-	  cat("Now calbrating the model: \n", fml,"\n")
-	  matL<-extract.mat(fml, data)
-	  y<-matL[[1]]
-	  x<-matL[[2]]
-      if (is.null(bw))
-      {
-        part1<-paste("bandwidth<-bw.gwr(",fml,sep="")
-        part2<-"data=spdf,kernel=kernel,approach=approach,dMat=dMat)"
-        #part2<-paste(paste(part2.1,part2.2,sep=","),")",sep="")
-        #part1<-paste("bw<-bw.sel(",fml)
-        #part2<-paste()
-        expression<-paste(part1,part2,sep=",")
+  varsindx.list <- list()
+  level.vars <- c()
+  tag <- 1
+  adapt <- NULL
+  for (i in 1:var.n) {
+    AICcs <- c()
+    for (j in 1:(var.n - i + 1)) {
+      vars.j <- c(level.vars, InDeVars.Sub[j])
+      fml <- Generate.formula(DeVar, vars.j)
+	    cat("Now calbrating the model: \n", fml, "\n")
+	    matL <- extract.mat(fml, data)
+	    y <- matL[[1]]
+	    x <- matL[[2]]
+      if (is.null(bw)) {
+        part1 <- paste("bandwidth<-bw.gwr(", fml, sep = "")
+        part2 <- "data=spdf,kernel=kernel,approach=approach,dMat=dMat)"
+        expression <- paste(part1, part2, sep = ",")
         print(expression)
-        eval(parse(text=expression))
-      }
-      else
-      {
-        if (adaptive)
-        {
+        eval(parse(text = expression))
+      } else {
+        if (adaptive) {
           stopifnot(is.numeric(bw))
           stopifnot((bw >= 0))
-        }
-        else
-        {
+        } else {
           stopifnot(is.numeric(bw))
           stopifnot((bw > min(dMat)))
         }
-        bandwidth<-bw
-       } 
+        bandwidth <- bw
+      } 
 
-        ##############Calibrate the GWR model
-        S<-matrix(nrow=dp.n,ncol=dp.n)
-        betas <-matrix(nrow=dp.n, ncol=ncol(x))
-          for (i in 1:dp.n)
-          {
-            dist.vi<-dMat[,i]
-            W.i<-gw.weight(dist.vi,bandwidth,kernel,adaptive)
-            gw.resi<-gw_reg(x,y,W.i,hatmatrix=T,i)
-            betas[i,]<-as.numeric(gw.resi[[1]])
-            S[i,]<-gw.resi[[2]]
-            #Ci<-gw.resi[[3]]
-          }
-        
-       # v1 <- sum(diag(S))
-#        v2<-0
-#         for (i in 1:dp.n)
-#	        v2 <-v2+ sum(S[,i]^2)
-#        Q <- t(diag(dp.n)-S)%*%(diag(dp.n)-S)
-#  	    rss <- c(t(y)%*%Q%*%y)
-#        sigma2 <- rss/dp.n
-#        AIC <- dp.n*log(sigma2) + dp.n*log(2*pi) +dp.n+v1
-#        AICc <- dp.n*log(sigma2) + dp.n*log(2*pi) + dp.n *((dp.n + v1) / (dp.n - 2 - v1))
-        aic.rss <- as.numeric(AICc_rss(y,x, betas, S))
-        model.list[[tag]]<-list(fml, vars.j)
-        GWR.df<-rbind(GWR.df, c(bw, aic.rss[2], aic.rss[3], aic.rss[1]))
-        AICcs<-c(AICcs, aic.rss[3])
-        tag<-tag+1
+      ##############Calibrate the GWR model
+      betas <- matrix(nrow = dp.n, ncol = var.n)
+      s_hat <- numeric(2)
+      if (parallel == FALSE) {
+        res <- gw_reg_all(x, y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive)
+        betas <- res$betas
+        s_hat <- res$s_hat
+      } else if (parallel == "omp") {
+        if (missing(cl)) { threads <- 0 } else {
+          threads <- ifelse(is(cl, "numeric"), cl, 0)
+        }
+        res <- gw_reg_all_omp(x, y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, threads)
+        betas <- res$betas
+        s_hat <- res$s_hat
+      } else if (parallel == "cluster") {
+        if (missing(cl)) {
+          cl.n <- max(detectCores() - 4, 2)
+          cl <- makeCluster(cl.n)
+        } else cl.n <- length(cl)
+        clusterCall(cl, function() { library(GWmodel) })
+        cl.results <- clusterApplyLB(cl, 1:cl.n, function(group.i, cl.n, x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive) {
+          res <- gw_reg_all(x, y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, cl.n, group.i)
+          return(res)
+        }, cl.n, x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive)
+        for (i in 1:cl.n) {
+          res <- cl.results[[i]]
+          betas = betas + res$betas
+          s_hat = s_hat + res$s_hat
+        }
+        if (missing(cl)) stopCluster(cl)
+      } else {
+        for (i in 1:dp.n)
+        {
+          dist.vi<-dMat[,i]
+          W.i<-gw.weight(dist.vi,bandwidth,kernel,adaptive)
+          gw.resi<-gw_reg(x,y,W.i,hatmatrix=T,i)
+          betas[i,]<-as.numeric(gw.resi[[1]])
+          S[i,]<-gw.resi[[2]]
+          #Ci<-gw.resi[[3]]
+        }
+      }
+      aic.rss <- as.numeric(AICc_rss1(y, x, betas, s_hat))
+      model.list[[tag]] <- list(fml, vars.j)
+      GWR.df <- rbind(GWR.df, c(bw, aic.rss[2], aic.rss[3], aic.rss[1]))
+      AICcs <- c(AICcs, aic.rss[3])
+      tag <- tag + 1
     }
-    idx<-which.min(AICcs)[1]
-    level.vars<-c(level.vars,InDeVars.Sub[idx])
-    InDeVars.Sub<-InDeVars.Sub[-idx]
+    idx <- which.min(AICcs)[1]
+    level.vars <- c(level.vars, InDeVars.Sub[idx])
+    InDeVars.Sub <- InDeVars.Sub[-idx]
   }
-  res<-list(model.list,GWR.df)
+  res <- list(model.list, GWR.df)
   res
 }
 
@@ -115,116 +129,136 @@ gwr.model.selection<-function(DeVar=NULL,InDeVars=NULL, data=list(),bw=NULL,appr
 model.selection.gwr <-function(DeVar=NULL,InDeVars=NULL, data=list(),bw=NULL,approach="CV",
                      adaptive=F,kernel="bisquare",dMat=NULL,p=2, theta=0, longlat=F)
 {
-   if(is.null(DeVar)||!is.character(DeVar)||is.null(InDeVars)||!is.character(InDeVars))
+  if (is.null(DeVar) || !is.character(DeVar) || is.null(InDeVars) || !is.character(InDeVars))
     stop("Input are not correct, please recheck!")
-   ##Data points
-  spdf<-data
-  if (!is.null(data))
-  {
-    if (is(data, "Spatial"))
-      {
-        p4s <- proj4string(data)
-        dp.locat<-coordinates(data)
-        data <- as(data, "data.frame")
-      }
-    else
-      {
-        if (!is(data, "data.frame"))
-           stop("Given regression data must be data.frame or Spatial*DataFrame")
-      }
+  ##Data points
+  spdf <- data
+  if (!is.null(data)) {
+    if (is(data, "Spatial")) {
+      p4s <- proj4string(data)
+      dp.locat <- coordinates(data)
+      data <- as(data, "data.frame")
+    } else {
+      if (!is(data, "data.frame"))
+        stop("Given regression data must be data.frame or Spatial*DataFrame")
+    }
   }
   else stop("No regression data frame is avaiable!")
   #################################################################
-   vars.df<-names(data)
-   dp.n<-nrow(data)
-   var.n<-length(InDeVars)
-   InDeVars.Sub<-InDeVars
-   model.list<-list()
-   GWR.df<-c()
-   
-   if (is.null(dMat))
-    {
-      dMat <- gw.dist(dp.locat=dp.locat, p=p, theta=theta, longlat=longlat)
-    }
+  vars.df <- names(data)
+  dp.n <- nrow(data)
+  var.n <- length(InDeVars)
+  InDeVars.Sub <- InDeVars
+  model.list <- list()
+  GWR.df <- c()
+  
+  if (missing(dMat)) {
+    dMat <- matrix(0, 0, 0)
+    DM.given <- F
+  }
+  else if (is.null(dMat) || !is.matrix(dMat)) {
+    DM.given<-F
+    dMat <- matrix(0, 0, 0)
+  }
+  else {
+    DM.given<-T
+    dim.dMat<-dim(dMat)
+    if (dim.dMat[1]!=dp.n||dim.dMat[2]!=dp.n)
+      stop ("Dimensions of dMat are not correct")
+  }
   #vars.idxs<-c()###Record indices used for each model
-   varsindx.list<-list()
-   level.vars<-c()
-   tag<-1
-   adapt<-NULL
-   for (i in 1:var.n)
-  {
-    AICcs<-c()
-    for (j in 1:(var.n-i+1))
-    {
-      vars.j<-c(level.vars,InDeVars.Sub[j])
-      fml<-Generate.formula(DeVar,vars.j)
-	  cat("Now calbrating the model: \n", fml,"\n")
-	  matL<-extract.mat(fml, data)
-	  y<-matL[[1]]
-	  x<-matL[[2]]
-      if (is.null(bw))
-      {
-        part1<-paste("bandwidth<-bw.gwr(",fml,sep="")
-        part2<-"data=spdf,kernel=kernel,approach=approach,dMat=dMat)"
-        #part2<-paste(paste(part2.1,part2.2,sep=","),")",sep="")
-        #part1<-paste("bw<-bw.sel(",fml)
-        #part2<-paste()
-        expression<-paste(part1,part2,sep=",")
+  varsindx.list <- list()
+  level.vars <- c()
+  tag <- 1
+  adapt <- NULL
+  for (i in 1:var.n) {
+    AICcs <- c()
+    for (j in 1:(var.n - i + 1)) {
+      vars.j <- c(level.vars, InDeVars.Sub[j])
+      fml <- Generate.formula(DeVar, vars.j)
+      cat("Now calbrating the model: \n", fml, "\n")
+      matL <- extract.mat(fml, data)
+      y <- matL[[1]]
+      x <- matL[[2]]
+      if (is.null(bw)) {
+        part1 <- paste("bandwidth<-bw.gwr(", fml, sep = "")
+        part2 <- "data=spdf,kernel=kernel,approach=approach,dMat=dMat)"
+        expression <- paste(part1, part2, sep = ",")
         print(expression)
-        eval(parse(text=expression))
-      }
-      else
-      {
-        if (adaptive)
-        {
+        eval(parse(text = expression))
+      } else {
+        if (adaptive) {
           stopifnot(is.numeric(bw))
           stopifnot((bw >= 0))
-        }
-        else
-        {
+        } else {
           stopifnot(is.numeric(bw))
-          stopifnot((bw > min(dMat)))
+          # stopifnot((bw > min(dMat)))
         }
-        bandwidth<-bw
-       } 
+        bandwidth <- bw
+      }
 
-        ##############Calibrate the GWR model
-        S<-matrix(nrow=dp.n,ncol=dp.n)
-        betas <-matrix(nrow=dp.n, ncol=ncol(x))
-          for (i in 1:dp.n)
-          {
-            dist.vi<-dMat[,i]
-            W.i<-gw.weight(dist.vi,bandwidth,kernel,adaptive)
-            gw.resi<-gw_reg(x,y,W.i,hatmatrix=T,i)
-            betas[i,]<-as.numeric(gw.resi[[1]])
-            S[i,]<-gw.resi[[2]]
-            #Ci<-gw.resi[[3]]
-          }
-        
-       # v1 <- sum(diag(S))
-#        v2<-0
-#         for (i in 1:dp.n)
-#	        v2 <-v2+ sum(S[,i]^2)
-#        Q <- t(diag(dp.n)-S)%*%(diag(dp.n)-S)
-#  	    rss <- c(t(y)%*%Q%*%y)
-#        sigma2 <- rss/dp.n
-#        AIC <- dp.n*log(sigma2) + dp.n*log(2*pi) +dp.n+v1
-#        AICc <- dp.n*log(sigma2) + dp.n*log(2*pi) + dp.n *((dp.n + v1) / (dp.n - 2 - v1))
-        aic.rss <- as.numeric(AICc_rss(y,x, betas, S))
-        model.list[[tag]]<-list(fml, vars.j)
-        GWR.df<-rbind(GWR.df, c(bw, aic.rss[2], aic.rss[3], aic.rss[1]))
-        AICcs<-c(AICcs, aic.rss[3])
-        tag<-tag+1
+      ##############Calibrate the GWR model
+      betas <- matrix(nrow = dp.n, ncol = var.n)
+      s_hat <- numeric(2)
+      if (parallel == FALSE) {
+        res <- gw_reg_all(X, Y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive)
+        betas <- res$betas
+        s_hat <- res$s_hat
+      } else if (parallel == "omp") {
+        if (missing(cl)) { threads <- 0 } else {
+          threads <- ifelse(is(cl, "numeric"), cl, 0)
+        }
+        res <- gw_reg_all_omp(X, Y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, threads)
+        betas <- res$betas
+        s_hat <- res$s_hat
+      } else if (parallel == "cuda") {
+        if (missing(cl)) { groupl <- 0 } else {
+          groupl <- ifelse(is(cl, "numeric"), cl, 0)
+        }
+        res <- gw_reg_all_cuda(X, Y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, groupl)
+        betas <- res$betas
+        s_hat <- res$s_hat
+      } else if (parallel == "cluster") {
+        if (missing(cl)) {
+          cl.n <- max(detectCores() - 4, 2)
+          cl <- makeCluster(cl.n)
+        } else cl.n <- length(cl)
+        clusterCall(cl, function() { library(GWmodel) })
+        cl.results <- clusterApplyLB(cl, 1:cl.n, function(group.i, cl.n, x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive) {
+          res <- gw_reg_all(x, y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, cl.n, group.i)
+          return(res)
+        }, cl.n, x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive)
+        for (i in 1:cl.n) {
+          res <- cl.results[[i]]
+          betas = betas + res$betas
+          s_hat = s_hat + res$s_hat
+        }
+        if (missing(cl)) stopCluster(cl)
+      } else {
+        for (i in 1:dp.n) {
+          dist.vi<-dMat[,i]
+          W.i<-gw.weight(dist.vi,bandwidth,kernel,adaptive)
+          gw.resi<-gw_reg(x,y,W.i,hatmatrix=T,i)
+          betas[i,]<-as.numeric(gw.resi[[1]])
+          S[i,]<-gw.resi[[2]]
+          #Ci<-gw.resi[[3]]
+        }
+      }
+      aic.rss <- as.numeric(AICc_rss1(y, x, betas, s_hat))
+      model.list[[tag]] <- list(fml, vars.j)
+      GWR.df <- rbind(GWR.df, c(bw, aic.rss[2], aic.rss[3], aic.rss[1]))
+      AICcs <- c(AICcs, aic.rss[3])
+      tag <- tag + 1
     }
-    idx<-which.min(AICcs)[1]
-    level.vars<-c(level.vars,InDeVars.Sub[idx])
-    InDeVars.Sub<-InDeVars.Sub[-idx]
+    idx <- which.min(AICcs)[1]
+    level.vars <- c(level.vars, InDeVars.Sub[idx])
+    InDeVars.Sub <- InDeVars.Sub[-idx]
   }
-  res<-list(model.list,GWR.df)
+  res <- list(model.list, GWR.df)
   res
 }
 #######Extract model matrix
-extract.mat<-function(formula, data=list())
+extract.mat <- function(formula, data = list())
 {
 	this.call <- match.call()
 	if (!is.null(data))
@@ -249,20 +283,20 @@ extract.mat<-function(formula, data=list())
     mt <- attr(mf, "terms")
     y <- model.extract(mf, "response")
     x <- model.matrix(mt, mf)
-    mat.list<-list(y,x)
+  mat.list <- list(y, x)
 	mat.list
 }
 
-gwr.model.view<-function(DeVar, InDeVars, model.list)
+gwr.model.view <- function(DeVar, InDeVars, model.list)
 {
-  n<-length(InDeVars)
-  if (n>10)
+  n <- length(InDeVars)
+  if (n > 10)
   {
-    cex<-10/n
+    cex <- 10 / n
   }
   else
   {
-    cex<-1
+    cex <- 1
   }
 
   #InDeVars<-sort(InDeVars)
