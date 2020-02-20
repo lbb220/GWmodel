@@ -148,3 +148,25 @@ scgwr_loocv <- function(target, x, y, bw, poly, Mx0, My0, XtX, XtY) {
 gw_dist <- function(dp.locat, rp.locat, focus, p, theta, longlat, rp.given) {
   .Call('GWmodel_gw_dist', PACKAGE = 'GWmodel', dp.locat, rp.locat, focus, p, theta, longlat, rp.given)
 }
+
+gw_reg_all <- function(x, y, dp.locat, rp.given, rp.locat, dm.given, dmat, hatmatrix, p, theta, longlat, bw, kernel, adaptive, ngroup = 1, igroup = 1) {
+  kernel.id <- switch (kernel,
+                       gaussian = 0,
+                       exponential = 1,
+                       bisquare = 2,
+                       tricube  = 3,
+                       boxcar   = 4)
+  .Call('GWmodel_gw_reg_all', PACKAGE = 'GWmodel', 
+        x, y, dp.locat, rp.given, rp.locat, dm.given, dmat, hatmatrix, p, theta, longlat, bw, kernel.id, adaptive, ngroup, igroup - 1)
+}
+
+gw_reg_all_omp <- function(x, y, dp.locat, rp.given, rp.locat, dm.given, dmat, hatmatrix, p, theta, longlat, bw, kernel, adaptive, threads = 0, ngroup = 1, igroup = 1) {
+  kernel.id <- switch (kernel,
+                       gaussian = 0,
+                       exponential = 1,
+                       bisquare = 2,
+                       tricube  = 3,
+                       boxcar   = 4)
+  .Call('GWmodel_gw_reg_all_omp', PACKAGE = 'GWmodel', 
+        x, y, dp.locat, rp.given, rp.locat, dm.given, dmat, hatmatrix, p, theta, longlat, bw, kernel.id, adaptive, threads, ngroup, igroup - 1)
+}

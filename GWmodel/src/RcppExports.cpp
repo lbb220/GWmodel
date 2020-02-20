@@ -518,3 +518,68 @@ RcppExport SEXP GWmodel_gw_dist(SEXP dpSEXP, SEXP rpSEXP, SEXP focusSEXP, SEXP p
   return __result;
   END_RCPP
 }
+
+//GWmodel_gw_reg_all
+Rcpp::List gw_reg_all(mat x, vec y, mat dp, bool rp_given, mat rp, bool dm_given, mat dmat, bool hatmatrix, 
+                      double p, double theta, bool longlat, 
+                      double bw, int kernel, bool adaptive,
+                      int ngroup, int igroup);
+RcppExport SEXP GWmodel_gw_reg_all(SEXP xSEXP, SEXP ySEXP, SEXP dpSEXP, SEXP rp_givenSEXP, SEXP rpSEXP, SEXP dm_givenSEXP, SEXP dmatSEXP, SEXP hatmatrixSEXP, 
+                                   SEXP pSEXP, SEXP thetaSEXP, SEXP longlatSEXP, SEXP bwSEXP, SEXP kernelSEXP, SEXP adaptiveSEXP,
+                                   SEXP ngroupSEXP, SEXP igroupSEXP) {
+  BEGIN_RCPP
+  Rcpp::RObject __result;
+  Rcpp::RNGScope __rngScope;
+  Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+  Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type dp(dpSEXP);
+  Rcpp::traits::input_parameter< bool >::type rp_given(rp_givenSEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type rp(rpSEXP);
+  Rcpp::traits::input_parameter< bool >::type dm_given(dm_givenSEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type dmat(dmatSEXP);
+  Rcpp::traits::input_parameter< bool >::type hatmatrix(hatmatrixSEXP);
+  Rcpp::traits::input_parameter< double >::type p(pSEXP);
+  Rcpp::traits::input_parameter< double >::type theta(thetaSEXP);
+  Rcpp::traits::input_parameter< bool >::type longlat(longlatSEXP);
+  Rcpp::traits::input_parameter< double >::type bw(bwSEXP);
+  Rcpp::traits::input_parameter< double >::type kernel(kernelSEXP);
+  Rcpp::traits::input_parameter< bool >::type adaptive(adaptiveSEXP);
+  Rcpp::traits::input_parameter< int >::type ngroup(ngroupSEXP);
+  Rcpp::traits::input_parameter< int >::type igroup(igroupSEXP);
+  __result = Rcpp::wrap(gw_reg_all(x, y, dp, rp_given, rp, dm_given, dmat, hatmatrix, p, theta, longlat, bw, kernel, adaptive, ngroup, igroup));
+  return __result;
+  END_RCPP
+}
+
+//GWmodel_gw_reg_all_omp
+Rcpp::List gw_reg_all_omp(mat x, vec y, mat dp, bool rp_given, mat rp, bool dm_given, mat dmat, bool hatmatrix, 
+                          double p, double theta, bool longlat, 
+                          double bw, int kernel, bool adaptive,
+                          int threads, int ngroup, int igroup);
+RcppExport SEXP GWmodel_gw_reg_all_omp(SEXP xSEXP, SEXP ySEXP, SEXP dpSEXP, SEXP rp_givenSEXP, SEXP rpSEXP, SEXP dm_givenSEXP, SEXP dmatSEXP, SEXP hatmatrixSEXP, 
+                                       SEXP pSEXP, SEXP thetaSEXP, SEXP longlatSEXP, SEXP bwSEXP, SEXP kernelSEXP, SEXP adaptiveSEXP,
+                                       SEXP threadsSEXP, SEXP ngroupSEXP, SEXP igroupSEXP) {
+  BEGIN_RCPP
+  Rcpp::RObject __result;
+  Rcpp::RNGScope __rngScope;
+  Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+  Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type dp(dpSEXP);
+  Rcpp::traits::input_parameter< bool >::type rp_given(rp_givenSEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type rp(rpSEXP);
+  Rcpp::traits::input_parameter< bool >::type dm_given(dm_givenSEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type dmat(dmatSEXP);
+  Rcpp::traits::input_parameter< bool >::type hatmatrix(hatmatrixSEXP);
+  Rcpp::traits::input_parameter< double >::type p(pSEXP);
+  Rcpp::traits::input_parameter< double >::type theta(thetaSEXP);
+  Rcpp::traits::input_parameter< bool >::type longlat(longlatSEXP);
+  Rcpp::traits::input_parameter< double >::type bw(bwSEXP);
+  Rcpp::traits::input_parameter< double >::type kernel(kernelSEXP);
+  Rcpp::traits::input_parameter< bool >::type adaptive(adaptiveSEXP);
+  Rcpp::traits::input_parameter< int >::type threads(threadsSEXP);
+  Rcpp::traits::input_parameter< int >::type ngroup(ngroupSEXP);
+  Rcpp::traits::input_parameter< int >::type igroup(igroupSEXP);
+  __result = Rcpp::wrap(gw_reg_all_omp(x, y, dp, rp_given, rp, dm_given, dmat, hatmatrix, p, theta, longlat, bw, kernel, adaptive, threads, ngroup, igroup));
+  return __result;
+  END_RCPP
+}

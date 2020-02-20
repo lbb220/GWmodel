@@ -904,3 +904,150 @@ mat gw_weight(mat dist, double bw, int kernel, bool adaptive) {
   }
   return trans(w);
 }
+
+// [[Rcpp::export]]
+List gw_reg_all(mat x, vec y, mat dp, bool rp_given, mat rp, bool dm_given, mat dmat, bool hatmatrix, 
+                double p, double theta, bool longlat, 
+                double bw, int kernel, bool adaptive,
+                int ngroup, int igroup) {
+  int n = rp.n_rows, k = x.n_cols;
+  mat betas(n, k, fill::zeros);
+  int lgroup = floor(((double)n) / ngroup);
+  int iStart = igroup * lgroup, iEnd = (igroup + 1 < ngroup) ? (igroup + 1) * lgroup : n;
+  if (hatmatrix) {
+    mat betasSE(n, k, fill::zeros);
+    mat s_hat(1, 2, fill::zeros);
+    mat qdiag(1, n, fill::zeros);
+    mat rowsumSE(n, 1, fill::ones);
+    // clock_t clock0 = clock(), clock1;
+    for (int i = iStart; i < iEnd; i++) {
+      mat d = dm_given ? dmat.col(i) : gw_dist(dp, rp, i, p, theta, longlat, rp_given);
+      mat w = gw_weight(d, bw, kernel, adaptive);
+      mat ws(1, k, fill::ones);
+      mat xtw = trans(x %(w * ws));
+      mat xtwx = xtw * x;
+      mat xtwy = trans(x) * (w % y);
+      mat xtwx_inv = inv(xtwx);
+      betas.row(i) = trans(xtwx_inv * xtwy);
+      // hatmatrix
+      mat ci = xtwx_inv * xtw;
+      mat si = x.row(i) * ci;
+      betasSE.row(i) = trans((ci % ci) * rowsumSE);
+      s_hat(0) += si(0, i);
+      s_hat(1) += det(si * trans(si));
+      mat onei(1, n, fill::zeros);
+      onei(i) = 1;
+      mat p = onei - si;
+      qdiag += p % p;
+    }
+    return List::create(
+      Named("betas") = betas,
+      Named("betas.SE") = betasSE,
+      Named("s_hat") = s_hat,
+      Named("q.diag") = qdiag
+    );
+  } else {
+    for (int i = iStart; i < iEnd; i++) {
+      mat d = dm_given ? dmat.row(i) : gw_dist(dp, rp, i, p, theta, longlat, rp_given);
+      mat w = gw_weight(d, bw, kernel, adaptive);
+      mat ws(1, x.n_cols, fill::ones);
+      mat xtw = trans(x %(w * ws));
+      mat xtwx = xtw * x;
+      mat xtwy = trans(x) * (w % y);
+      mat xtwx_inv = inv(xtwx);
+      betas.row(i) = trans(xtwx_inv * xtwy);
+    }
+    return List::create(
+      Named("betas") = betas
+    );
+  }
+}
+
+// [[Rcpp::export]]
+List gw_reg_all_omp(mat x, vec y, mat dp, bool rp_given, mat rp, bool dm_given, mat dmat, bool hatmatrix, 
+                    double p, double theta, bool longlat, 
+                    double bw, int kernel, bool adaptive,
+                    int threads, int ngroup, int igroup) {
+  int n = rp.n_rows, k = x.n_cols;
+  mat betas(n, k, fill::zeros);
+  int lgroup = floor(((double)n) / ngroup);
+  int iStart = igroup * lgroup, iEnd = (igroup + 1 < ngroup) ? (igroup + 1) * lgroup : n;
+  if (hatmatrix) {
+    mat betasSE(n, k, fill::zeros);
+    mat s_hat(1, 2, fill::zeros);
+    mat qdiag(1, n, fill::zeros);
+    mat rowsumSE(n, 1, fill::ones);
+    vec s_hat1(n, fill::zeros), s_hat2(n, fill::zeros);
+    int thread_nums = threads > 0 ? threads : omp_get_num_procs() - 1;
+    mat qdiag_all(thread_nums, n, fill::zeros);
+    bool flag_error = false;
+#pragma omp parallel for num_threads(thread_nums)
+    for (int i = iStart; i < iEnd; i++) {
+      if (!flag_error) {
+        int thread_id = omp_get_thread_num();
+        mat d = dm_given ? dmat.col(i) : gw_dist(dp, rp, i, p, theta, longlat, rp_given);
+        mat w = gw_weight(d, bw, kernel, adaptive);
+        mat ws(1, k, fill::ones);
+        mat xtw = trans(x %(w * ws));
+        mat xtwx = xtw * x;
+        mat xtwy = trans(x) * (w % y);
+        try {
+          mat xtwx_inv = inv(xtwx);
+          betas.row(i) = trans(xtwx_inv * xtwy);
+          // hatmatrix
+          mat ci = xtwx_inv * xtw;
+          mat si = x.row(i) * ci;
+          betasSE.row(i) = trans((ci % ci) * rowsumSE);
+          // s_hat(0) += si(0, i);
+          // s_hat(1) += det(si * trans(si));
+          s_hat1(i) = si(0, i);
+          s_hat2(i) = det(si * trans(si));
+          mat onei(1, n, fill::zeros);
+          onei(i) = 1;
+          mat p = onei - si;
+          qdiag_all.row(thread_id) += p % p;
+        } catch (...) {
+          flag_error = true;
+        }
+      }
+    }
+    if (flag_error) {
+      throw exception("Matrix seems singular");
+    } else {
+      s_hat(0) = sum(s_hat1);
+      s_hat(1) = sum(s_hat2);
+      qdiag = mat(1, thread_nums, fill::ones) * qdiag_all;
+      return List::create(
+        Named("betas") = betas,
+        Named("betas.SE") = betasSE,
+        Named("s_hat") = s_hat,
+        Named("q.diag") = qdiag
+      );
+    }
+  } else {
+    bool flag_error = false;
+    for (int i = iStart; i < iEnd; i++) {
+      if (!flag_error) {
+        mat d = dm_given ? dmat.row(i) : gw_dist(dp, rp, i, p, theta, longlat, rp_given);
+        mat w = gw_weight(d, bw, kernel, adaptive);
+        mat ws(1, x.n_cols, fill::ones);
+        mat xtw = trans(x %(w * ws));
+        mat xtwx = xtw * x;
+        mat xtwy = trans(x) * (w % y);
+        try {
+          mat xtwx_inv = inv(xtwx);
+          betas.row(i) = trans(xtwx_inv * xtwy);
+        } catch (...) {
+          flag_error = true;
+        }
+      }
+    }
+    if (flag_error) {
+      throw exception("Matrix seems singular.");
+    } else {
+      return List::create(
+        Named("betas") = betas
+      );
+    }
+  }
+}
