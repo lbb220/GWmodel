@@ -43,6 +43,10 @@ extern SEXP GWmodel_gw_reg_all_omp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEX
 extern SEXP GWmodel_gw_cv_all(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP GWmodel_gw_cv_all_omp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 
+#ifdef CUDA_ACCE
+extern SEXP GWmodel_gw_reg_cuda(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP GWmodel_gw_cv_all_cuda(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+#endif
 
 static const R_CallMethodDef CallEntries[] = {
     {"GWmodel_AICc",              (DL_FUNC) &GWmodel_AICc,              4},
@@ -84,6 +88,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"GWmodel_gw_reg_all_omp",    (DL_FUNC) &GWmodel_gw_reg_all_omp,    17},
     {"GWmodel_gw_cv_all",         (DL_FUNC) &GWmodel_gw_cv_all,         13},
     {"GWmodel_gw_cv_all_omp",     (DL_FUNC) &GWmodel_gw_cv_all_omp,     14},
+#ifdef CUDA_ACCE
+    {"GWmodel_gw_reg_cuda",       (DL_FUNC) &GWmodel_gw_reg_cuda,       16},
+    {"GWmodel_gw_cv_all_cuda",    (DL_FUNC) &GWmodel_gw_cv_all_cuda,    13},
+#endif
     {NULL, NULL, 0}
 };
 

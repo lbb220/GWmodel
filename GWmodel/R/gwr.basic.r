@@ -158,7 +158,25 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
       s_hat = reg.result$s_hat
       q.diag = reg.result$q.diag
     }
-  }  else if (parallel == "omp") {
+  } else if (parallel == "cuda") {
+    print(paste("Use CUDA parallel computing."))
+    if (missing(cl)) {
+      groupl <- 0
+    } else {
+      groupl <- ifelse(is(cl, "numeric"), cl, 0)
+    }
+    reg.result <- gw_reg_all_cuda(x, y, dp.locat, rp.given, rp.locat, DM.given, dMat, hatmatrix, p, theta, longlat, bw, kernel, adaptive, groupl)
+    if (is(reg.result, "logical") && reg.result == FALSE) {
+      stop("Some CUDA errors occured.")
+    } else {
+      betas = betas + reg.result$betas
+      if (hatmatrix) {
+        betas.SE = reg.result$betas.SE
+        s_hat = reg.result$s_hat
+        q.diag = reg.result$q.diag
+      }
+    }
+  } else if (parallel == "omp") {
     if (missing(cl)) { threads <- 0 } else {
       threads <- ifelse(is(cl, "numeric"), cl, 0)
     }

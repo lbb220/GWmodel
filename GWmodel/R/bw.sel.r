@@ -2,7 +2,7 @@
 ##Author: Binbin Lu
 bw.gwr<-function(formula, data, approach="CV",kernel="bisquare",adaptive=FALSE, p=2, theta=0, longlat=F,dMat,parallel=F,cl=NULL)
 {
-    ##Data points{
+  ##Data points{
   if (is(data, "Spatial"))
   {
     dp.locat<-coordinates(data)
@@ -137,6 +137,13 @@ gwr.cv<-function(bw, X, Y, kernel="bisquare",adaptive=FALSE, dp.locat, p=2, thet
     gw.resi <- try(gw_cv_all_omp(X, Y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive, threads))
     if(!inherits(gw.resi, "try-error")) CV.score <- gw.resi 
     else CV.score <- Inf
+  } else if (parallel == "cuda") {
+    if (missing(cl)) { groupl <- 0 } else {
+      groupl <- ifelse(is(cl, "numeric"), cl, 0)
+    }
+    gw.resi <- try(gw_cv_all_cuda(X, Y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive, groupl))
+    if(!inherits(gw.resi, "try-error")) CV.score <- gw.resi 
+    else CV.score <- Inf
   } else if (parallel == "cluster") {
     if (missing(cl)) {
       cl.n <- max(detectCores() - 4, 2)
@@ -266,6 +273,17 @@ gwr.aic<-function(bw, X, Y, kernel="bisquare",adaptive=FALSE, dp.locat, p=2, the
       threads <- ifelse(is(cl, "numeric"), cl, 0)
     }
     res <- try(gw_reg_all_omp(X, Y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, threads))
+    if(!inherits(res, "try-error")) {
+      betas <- res$betas
+      s_hat <- res$s_hat
+      AICc.value <- AICc1(Y, X, betas, s_hat)
+    }
+    else AICc.value <- Inf
+  } else if (parallel == "cuda") {
+    if (missing(cl)) { groupl <- 0 } else {
+      groupl <- ifelse(is(cl, "numeric"), cl, 0)
+    }
+    res <- try(gw_reg_all_cuda(X, Y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, groupl))
     if(!inherits(res, "try-error")) {
       betas <- res$betas
       s_hat <- res$s_hat
