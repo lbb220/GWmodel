@@ -1,6 +1,7 @@
 ##Model selection,specification by a step-wise like AIC procedure in a "forward" direction
 gwr.model.selection<-function(DeVar=NULL,InDeVars=NULL, data=list(),bw=NULL,approach="CV",
-                     adaptive=F,kernel="bisquare",dMat=NULL,p=2, theta=0, longlat=F)
+                     adaptive=F,kernel="bisquare",dMat=NULL,p=2, theta=0, longlat=F,
+                     parallel.method=F,parallel.arg=NULL)
 {
   if (is.null(DeVar) || !is.character(DeVar) || is.null(InDeVars) || !is.character(InDeVars))
     stop("Input are not correct, please recheck!")
@@ -73,33 +74,33 @@ gwr.model.selection<-function(DeVar=NULL,InDeVars=NULL, data=list(),bw=NULL,appr
       ##############Calibrate the GWR model
       betas <- matrix(nrow = dp.n, ncol = var.n)
       s_hat <- numeric(2)
-      if (parallel == FALSE) {
+      if (parallel.method == FALSE) {
         res <- gw_reg_all(x, y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive)
         betas <- res$betas
         s_hat <- res$s_hat
-      } else if (parallel == "omp") {
-        if (missing(cl)) { threads <- 0 } else {
-          threads <- ifelse(is(cl, "numeric"), cl, 0)
+      } else if (parallel.method == "omp") {
+        if (missing(parallel.arg)) { threads <- 0 } else {
+          threads <- ifelse(is(parallel.arg, "numeric"), parallel.arg, 0)
         }
         res <- gw_reg_all_omp(x, y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, threads)
         betas <- res$betas
         s_hat <- res$s_hat
-      } else if (parallel == "cluster") {
-        if (missing(cl)) {
-          cl.n <- max(detectCores() - 4, 2)
-          cl <- makeCluster(cl.n)
-        } else cl.n <- length(cl)
-        clusterCall(cl, function() { library(GWmodel) })
-        cl.results <- clusterApplyLB(cl, 1:cl.n, function(group.i, cl.n, x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive) {
-          res <- gw_reg_all(x, y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, cl.n, group.i)
+      } else if (parallel.method == "cluster") {
+        if (missing(parallel.arg)) {
+          parallel.arg.n <- max(detectCores() - 4, 2)
+          parallel.arg <- makeCluster(parallel.arg.n)
+        } else parallel.arg.n <- length(parallel.arg)
+        clusterCall(parallel.arg, function() { library(GWmodel) })
+        parallel.arg.results <- clusterApplyLB(parallel.arg, 1:parallel.arg.n, function(group.i, parallel.arg.n, x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive) {
+          res <- gw_reg_all(x, y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, parallel.arg.n, group.i)
           return(res)
-        }, cl.n, x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive)
-        for (i in 1:cl.n) {
-          res <- cl.results[[i]]
+        }, parallel.arg.n, x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive)
+        for (i in 1:parallel.arg.n) {
+          res <- parallel.arg.results[[i]]
           betas = betas + res$betas
           s_hat = s_hat + res$s_hat
         }
-        if (missing(cl)) stopCluster(cl)
+        if (missing(parallel.arg)) stopCluster(parallel.arg)
       } else {
         for (i in 1:dp.n)
         {
@@ -127,7 +128,8 @@ gwr.model.selection<-function(DeVar=NULL,InDeVars=NULL, data=list(),bw=NULL,appr
 
 # This version of this function is kept to make the code work with the early versions of GWmodel (before 2.0-1)
 model.selection.gwr <-function(DeVar=NULL,InDeVars=NULL, data=list(),bw=NULL,approach="CV",
-                     adaptive=F,kernel="bisquare",dMat=NULL,p=2, theta=0, longlat=F)
+                     adaptive=F,kernel="bisquare",dMat=NULL,p=2, theta=0, longlat=F,
+                     parallel.method=F,parallel.arg=NULL)
 {
   if (is.null(DeVar) || !is.character(DeVar) || is.null(InDeVars) || !is.character(InDeVars))
     stop("Input are not correct, please recheck!")
@@ -200,40 +202,40 @@ model.selection.gwr <-function(DeVar=NULL,InDeVars=NULL, data=list(),bw=NULL,app
       ##############Calibrate the GWR model
       betas <- matrix(nrow = dp.n, ncol = var.n)
       s_hat <- numeric(2)
-      if (parallel == FALSE) {
+      if (parallel.method == FALSE) {
         res <- gw_reg_all(X, Y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive)
         betas <- res$betas
         s_hat <- res$s_hat
-      } else if (parallel == "omp") {
-        if (missing(cl)) { threads <- 0 } else {
-          threads <- ifelse(is(cl, "numeric"), cl, 0)
+      } else if (parallel.method == "omp") {
+        if (missing(parallel.arg)) { threads <- 0 } else {
+          threads <- ifelse(is(parallel.arg, "numeric"), parallel.arg, 0)
         }
         res <- gw_reg_all_omp(X, Y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, threads)
         betas <- res$betas
         s_hat <- res$s_hat
-      } else if (parallel == "cuda") {
-        if (missing(cl)) { groupl <- 0 } else {
-          groupl <- ifelse(is(cl, "numeric"), cl, 0)
+      } else if (parallel.method == "cuda") {
+        if (missing(parallel.arg)) { groupl <- 0 } else {
+          groupl <- ifelse(is(parallel.arg, "numeric"), parallel.arg, 0)
         }
         res <- gw_reg_all_cuda(X, Y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, groupl)
         betas <- res$betas
         s_hat <- res$s_hat
-      } else if (parallel == "cluster") {
-        if (missing(cl)) {
-          cl.n <- max(detectCores() - 4, 2)
-          cl <- makeCluster(cl.n)
-        } else cl.n <- length(cl)
-        clusterCall(cl, function() { library(GWmodel) })
-        cl.results <- clusterApplyLB(cl, 1:cl.n, function(group.i, cl.n, x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive) {
-          res <- gw_reg_all(x, y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, cl.n, group.i)
+      } else if (parallel.method == "cluster") {
+        if (missing(parallel.arg)) {
+          parallel.arg.n <- max(detectCores() - 4, 2)
+          parallel.arg <- makeCluster(parallel.arg.n)
+        } else parallel.arg.n <- length(parallel.arg)
+        clusterCall(parallel.arg, function() { library(GWmodel) })
+        parallel.arg.results <- clusterApplyLB(parallel.arg, 1:parallel.arg.n, function(group.i, parallel.arg.n, x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive) {
+          res <- gw_reg_all(x, y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, parallel.arg.n, group.i)
           return(res)
-        }, cl.n, x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive)
-        for (i in 1:cl.n) {
-          res <- cl.results[[i]]
+        }, parallel.arg.n, x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive)
+        for (i in 1:parallel.arg.n) {
+          res <- parallel.arg.results[[i]]
           betas = betas + res$betas
           s_hat = s_hat + res$s_hat
         }
-        if (missing(cl)) stopCluster(cl)
+        if (missing(parallel.arg)) stopCluster(parallel.arg)
       } else {
         for (i in 1:dp.n) {
           dist.vi<-dMat[,i]

@@ -39,7 +39,7 @@
 #Belsey-Kuh-Welsh condition number
 #Variance Inflation Factors
 #Variance decomposition proportions
-gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", adaptive=FALSE, p=2, theta=0, longlat=F, dMat, F123.test=F, cv=F, W.vect=NULL, parallel = FALSE, cl)
+gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", adaptive=FALSE, p=2, theta=0, longlat=F, dMat, F123.test=F, cv=F, W.vect=NULL, parallel.method = FALSE, parallel.arg)
 {
   ##Record the start time
   timings <- list()
@@ -150,7 +150,7 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
   # W <- matrix(nrow = dp.n, ncol = rp.n)
   s_hat <- c(0.0, 0.0)
   q.diag <- matrix(0, 1, dp.n)
-  if (parallel == F) {
+  if (parallel.method == F) {
     reg.result <- gw_reg_all(x, y, dp.locat, rp.given, rp.locat, DM.given, dMat, hatmatrix, p, theta, longlat, bw, kernel, adaptive)
     betas = betas + reg.result$betas
     if (hatmatrix) {
@@ -158,12 +158,11 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
       s_hat = reg.result$s_hat
       q.diag = reg.result$q.diag
     }
-  } else if (parallel == "cuda") {
-    print(paste("Use CUDA parallel computing."))
-    if (missing(cl)) {
+  } else if (parallel.method == "cuda") {
+    if (missing(parallel.arg)) {
       groupl <- 0
     } else {
-      groupl <- ifelse(is(cl, "numeric"), cl, 0)
+      groupl <- ifelse(is(parallel.arg, "numeric"), parallel.arg, 0)
     }
     reg.result <- gw_reg_all_cuda(x, y, dp.locat, rp.given, rp.locat, DM.given, dMat, hatmatrix, p, theta, longlat, bw, kernel, adaptive, groupl)
     if (is(reg.result, "logical") && reg.result == FALSE) {
@@ -176,9 +175,9 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
         q.diag = reg.result$q.diag
       }
     }
-  } else if (parallel == "omp") {
-    if (missing(cl)) { threads <- 0 } else {
-      threads <- ifelse(is(cl, "numeric"), cl, 0)
+  } else if (parallel.method == "omp") {
+    if (missing(parallel.arg)) { threads <- 0 } else {
+      threads <- ifelse(is(parallel.arg, "numeric"), parallel.arg, 0)
     }
     reg.result <- gw_reg_all_omp(x, y, dp.locat, rp.given, rp.locat, DM.given, dMat, hatmatrix, p, theta, longlat, bw, kernel, adaptive, threads)
     betas = betas + reg.result$betas
@@ -187,18 +186,18 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
       s_hat = reg.result$s_hat
       q.diag = reg.result$q.diag
     }
-  } else if (parallel == "cluster") {
-    if (missing(cl)) {
-      cl.n <- max(detectCores() - 4, 2)
-      cl <- makeCluster(cl.n)
-    } else cl.n <- length(cl)
-    clusterCall(cl, function() { library(GWmodel) })
-    cl.results <- clusterApplyLB(cl, 1:cl.n, function(group.i, cl.n, x, y, dp.locat, rp.given, rp.locat, DM.given, dMat, hatmatrix, p, theta, longlat, bw, kernel, adaptive) {
-      reg.result <- gw_reg_all(x, y, dp.locat, rp.given, rp.locat, DM.given, dMat, hatmatrix, p, theta, longlat, bw, kernel, adaptive, cl.n, group.i)
+  } else if (parallel.method == "cluster") {
+    if (missing(parallel.arg)) {
+      parallel.arg.n <- max(detectCores() - 4, 2)
+      parallel.arg <- makeCluster(parallel.arg.n)
+    } else parallel.arg.n <- length(parallel.arg)
+    clusterCall(parallel.arg, function() { library(GWmodel) })
+    parallel.arg.results <- clusterApplyLB(parallel.arg, 1:parallel.arg.n, function(group.i, parallel.arg.n, x, y, dp.locat, rp.given, rp.locat, DM.given, dMat, hatmatrix, p, theta, longlat, bw, kernel, adaptive) {
+      reg.result <- gw_reg_all(x, y, dp.locat, rp.given, rp.locat, DM.given, dMat, hatmatrix, p, theta, longlat, bw, kernel, adaptive, parallel.arg.n, group.i)
       return(reg.result)
-    }, cl.n, x, y, dp.locat, rp.given, rp.locat, DM.given, dMat, hatmatrix, p, theta, longlat, bw, kernel, adaptive)
-    for (i in 1:cl.n) {
-      reg.result <- cl.results[[i]]
+    }, parallel.arg.n, x, y, dp.locat, rp.given, rp.locat, DM.given, dMat, hatmatrix, p, theta, longlat, bw, kernel, adaptive)
+    for (i in 1:parallel.arg.n) {
+      reg.result <- parallel.arg.results[[i]]
       betas = betas + reg.result$betas
       if (hatmatrix) {
         betas.SE = betas.SE + reg.result$betas.SE
@@ -206,8 +205,8 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
         q.diag = q.diag + reg.result$q.diag
       }
     }
-    if (missing(cl)) {
-      stopCluster(cl)
+    if (missing(parallel.arg)) {
+      stopCluster(parallel.arg)
     }
   } else {
     for (i in 1:rp.n) {
