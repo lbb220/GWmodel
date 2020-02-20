@@ -411,6 +411,21 @@ BEGIN_RCPP
 END_RCPP
 }
 
+//GWmodel_AICc_rss1
+arma::vec AICc_rss1(arma::vec y,arma::mat x, arma::mat beta, arma::vec s_hat);
+RcppExport SEXP GWmodel_AICc_rss1(SEXP ySEXP, SEXP xSEXP, SEXP betaSEXP, SEXP s_hatSEXP) {
+  BEGIN_RCPP
+  Rcpp::RObject __result;
+  Rcpp::RNGScope __rngScope;
+  Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type beta(betaSEXP);
+  Rcpp::traits::input_parameter< arma::vec >::type s_hat(s_hatSEXP);
+  __result = Rcpp::wrap(AICc_rss1(y, x, beta, s_hat));
+  return __result;
+  END_RCPP
+}
+
 //GWmodel_Ci_mat
 arma::mat Ci_mat(arma::mat x, arma::vec w);
 RcppExport SEXP GWmodel_Ci_mat(SEXP xSEXP, SEXP wSEXP) {

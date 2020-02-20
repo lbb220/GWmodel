@@ -4,7 +4,9 @@
 #include <R_ext/Rdynload.h>
 
 extern SEXP GWmodel_AICc(SEXP, SEXP, SEXP, SEXP);
+extern SEXP GWmodel_AICc1(SEXP, SEXP, SEXP, SEXP);
 extern SEXP GWmodel_AICc_rss(SEXP, SEXP, SEXP, SEXP);
+extern SEXP GWmodel_AICc_rss1(SEXP, SEXP, SEXP, SEXP);
 extern SEXP GWmodel_bisq_wt_mat(SEXP, SEXP);
 extern SEXP GWmodel_bisq_wt_vec(SEXP, SEXP);
 extern SEXP GWmodel_cd_dist_mat(SEXP, SEXP);
@@ -35,12 +37,13 @@ extern SEXP GWmodel_tri_wt_vec(SEXP, SEXP);
 extern SEXP GWmodel_scgwr_pre(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP GWmodel_scgwr_loocv(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP GWmodel_scgwr_reg(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP GWmodel_AICc1(SEXP, SEXP, SEXP, SEXP);
-extern SEXP GWmodel_gwr_diag1(SEXP, SEXP, SEXP, SEXP);
+
 
 static const R_CallMethodDef CallEntries[] = {
     {"GWmodel_AICc",              (DL_FUNC) &GWmodel_AICc,              4},
+    {"GWmodel_AICc1",             (DL_FUNC) &GWmodel_AICc1,             4},
     {"GWmodel_AICc_rss",          (DL_FUNC) &GWmodel_AICc_rss,          4},
+    {"GWmodel_AICc_rss1",         (DL_FUNC) &GWmodel_AICc_rss1,         4},
     {"GWmodel_bisq_wt_mat",       (DL_FUNC) &GWmodel_bisq_wt_mat,       2},
     {"GWmodel_bisq_wt_vec",       (DL_FUNC) &GWmodel_bisq_wt_vec,       2},
     {"GWmodel_cd_dist_mat",       (DL_FUNC) &GWmodel_cd_dist_mat,       2},
@@ -71,8 +74,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"GWmodel_scgwr_pre",         (DL_FUNC) &GWmodel_scgwr_pre,         7},
     {"GWmodel_scgwr_loocv",       (DL_FUNC) &GWmodel_scgwr_loocv,       9},
     {"GWmodel_scgwr_reg",         (DL_FUNC) &GWmodel_scgwr_reg,         11},
-	{"GWmodel_AICc1",              (DL_FUNC) &GWmodel_AICc1,             4},
-	{"GWmodel_gwr_diag1",          (DL_FUNC) &GWmodel_gwr_diag1,        4},
     {NULL, NULL, 0}
 };
 

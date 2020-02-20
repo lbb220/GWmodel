@@ -495,12 +495,28 @@ vec AICc_rss(vec y, mat x, mat beta, mat S)
 	//return 2*enp + 2*n*log(ss/n) + 2*enp*(enp+1)/(n - enp - 1);
 }
 
+// [[Rcpp::export]]
+vec AICc_rss1(vec y, mat x, mat beta, vec s_hat)
+{
+  vec result(3);
+  double ss = rss(y, x, beta);
+  result[0] = ss;
+  int n = x.n_rows;
+  double AIC = n * log(ss / n) + n * log(2 * datum::pi) + n + s_hat(0);
+  double AICc = n * log(ss / n) + n * log(2 * datum::pi) + n * ((n + s_hat(0)) / (n - 2 - s_hat(0))); //AICc
+  result[1] = AIC;
+  result[2] = AICc;
+  return result;
+  //return 2*enp + 2*n*log(ss/n) + 2*enp*(enp+1)/(n - enp - 1);
+}
+
 //Caculate the i row of
 // [[Rcpp::export]]
 mat Ci_mat(mat x, vec w)
 {
 	return inv(trans(x) * diagmat(w) * x) * trans(x) * diagmat(w);
 }
+
 //Scalable GWR C++ functions
 // [[Rcpp::export]]
 List scgwr_pre(mat x, vec y, int bw, int poly, double b0, mat g0, mat neighbour) {
