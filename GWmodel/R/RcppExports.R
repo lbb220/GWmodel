@@ -170,3 +170,25 @@ gw_reg_all_omp <- function(x, y, dp.locat, rp.given, rp.locat, dm.given, dmat, h
   .Call('GWmodel_gw_reg_all_omp', PACKAGE = 'GWmodel', 
         x, y, dp.locat, rp.given, rp.locat, dm.given, dmat, hatmatrix, p, theta, longlat, bw, kernel.id, adaptive, threads, ngroup, igroup - 1)
 }
+
+gw_cv_all <- function(x, y, dp.locat, dm.given, dmat, p, theta, longlat, bw, kernel, adaptive, ngroup = 1, igroup = 1) {
+  kernel.id <- switch (kernel,
+                       gaussian = 0,
+                       exponential = 1,
+                       bisquare = 2,
+                       tricube  = 3,
+                       boxcar   = 4)
+  .Call('GWmodel_gw_cv_all', PACKAGE = 'GWmodel', 
+        x, y, dp.locat, dm.given, dmat, p, theta, longlat, bw, kernel.id, adaptive, ngroup, igroup - 1)
+}
+
+gw_cv_all_omp <- function(x, y, dp.locat, dm.given, dmat, p, theta, longlat, bw, kernel, adaptive, threads = 0, ngroup = 1, igroup = 1) {
+  kernel.id <- switch (kernel,
+                       gaussian = 0,
+                       exponential = 1,
+                       bisquare = 2,
+                       tricube  = 3,
+                       boxcar   = 4)
+  .Call('GWmodel_gw_cv_all_omp', PACKAGE = 'GWmodel', 
+        x, y, dp.locat, dm.given, dmat, p, theta, longlat, bw, kernel.id, adaptive, threads, ngroup, igroup - 1)
+}

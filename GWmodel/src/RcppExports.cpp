@@ -583,3 +583,74 @@ RcppExport SEXP GWmodel_gw_reg_all_omp(SEXP xSEXP, SEXP ySEXP, SEXP dpSEXP, SEXP
   return __result;
   END_RCPP
 }
+
+//GWmodel_gw_cv_all
+double gw_cv_all(mat x, vec y, mat dp, bool dm_given, mat dmat, 
+                 double p, double theta, bool longlat, 
+                 double bw, int kernel, bool adaptive,
+                 int ngroup, int igroup);
+RcppExport SEXP GWmodel_gw_cv_all(SEXP xSEXP, SEXP ySEXP, SEXP dpSEXP, SEXP dm_givenSEXP, SEXP dmatSEXP, 
+                                  SEXP pSEXP, SEXP thetaSEXP, SEXP longlatSEXP, SEXP bwSEXP, SEXP kernelSEXP, SEXP adaptiveSEXP,
+                                  SEXP ngroupSEXP, SEXP igroupSEXP) {
+  BEGIN_RCPP
+  Rcpp::RObject __result;
+  Rcpp::RNGScope __rngScope;
+  Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+  Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type dp(dpSEXP);
+  Rcpp::traits::input_parameter< bool >::type dm_given(dm_givenSEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type dmat(dmatSEXP);
+  Rcpp::traits::input_parameter< double >::type p(pSEXP);
+  Rcpp::traits::input_parameter< double >::type theta(thetaSEXP);
+  Rcpp::traits::input_parameter< bool >::type longlat(longlatSEXP);
+  Rcpp::traits::input_parameter< double >::type bw(bwSEXP);
+  Rcpp::traits::input_parameter< double >::type kernel(kernelSEXP);
+  Rcpp::traits::input_parameter< bool >::type adaptive(adaptiveSEXP);
+  Rcpp::traits::input_parameter< int >::type ngroup(ngroupSEXP);
+  Rcpp::traits::input_parameter< int >::type igroup(igroupSEXP);
+  try {
+    __result = Rcpp::wrap(gw_cv_all(x, y, dp, dm_given, dmat, p, theta, longlat, bw, kernel, adaptive, ngroup, igroup));
+  } catch (std::runtime_error &ex) {
+    __result = Rcpp::wrap(R_PosInf);
+  } catch (std::exception &ex) {
+    throw ex;
+  }
+  return __result;
+  END_RCPP
+}
+
+//GWmodel_gw_cv_all
+double gw_cv_all_omp(mat x, vec y, mat dp, bool dm_given, mat dmat, 
+                     double p, double theta, bool longlat, 
+                     double bw, int kernel, bool adaptive,
+                     int threads, int ngroup, int igroup);
+RcppExport SEXP GWmodel_gw_cv_all_omp(SEXP xSEXP, SEXP ySEXP, SEXP dpSEXP, SEXP dm_givenSEXP, SEXP dmatSEXP, 
+                                      SEXP pSEXP, SEXP thetaSEXP, SEXP longlatSEXP, SEXP bwSEXP, SEXP kernelSEXP, SEXP adaptiveSEXP,
+                                      SEXP threadsSEXP, SEXP ngroupSEXP, SEXP igroupSEXP) {
+  BEGIN_RCPP
+  Rcpp::RObject __result;
+  Rcpp::RNGScope __rngScope;
+  Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+  Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type dp(dpSEXP);
+  Rcpp::traits::input_parameter< bool >::type dm_given(dm_givenSEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type dmat(dmatSEXP);
+  Rcpp::traits::input_parameter< double >::type p(pSEXP);
+  Rcpp::traits::input_parameter< double >::type theta(thetaSEXP);
+  Rcpp::traits::input_parameter< bool >::type longlat(longlatSEXP);
+  Rcpp::traits::input_parameter< double >::type bw(bwSEXP);
+  Rcpp::traits::input_parameter< double >::type kernel(kernelSEXP);
+  Rcpp::traits::input_parameter< bool >::type adaptive(adaptiveSEXP);
+  Rcpp::traits::input_parameter< int >::type threads(threadsSEXP);
+  Rcpp::traits::input_parameter< int >::type ngroup(ngroupSEXP);
+  Rcpp::traits::input_parameter< int >::type igroup(igroupSEXP);
+  try {
+    __result = Rcpp::wrap(gw_cv_all_omp(x, y, dp, dm_given, dmat, p, theta, longlat, bw, kernel, adaptive, threads, ngroup, igroup));
+  } catch (std::runtime_error &ex) {
+    __result = Rcpp::wrap(R_PosInf);
+  } catch (std::exception &ex) {
+    throw ex;
+  }
+  return __result;
+  END_RCPP
+}

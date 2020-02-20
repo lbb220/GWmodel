@@ -1,6 +1,6 @@
 ###Basic function for bandwidth selction
 ##Author: Binbin Lu
-bw.gwr<-function(formula, data, approach="CV",kernel="bisquare",adaptive=FALSE, p=2, theta=0, longlat=F,dMat)
+bw.gwr<-function(formula, data, approach="CV",kernel="bisquare",adaptive=FALSE, p=2, theta=0, longlat=F,dMat,parallel=F,cl=NULL)
 {
     ##Data points{
   if (is(data, "Spatial"))
@@ -33,6 +33,7 @@ bw.gwr<-function(formula, data, approach="CV",kernel="bisquare",adaptive=FALSE, 
   #################### Recommond to specify a distance matrix
   if (missing(dMat))
   {
+      dMat <- NULL
       DM.given<-F
       if(dp.n + dp.n <= 10000)
       {
@@ -87,10 +88,10 @@ bw.gwr<-function(formula, data, approach="CV",kernel="bisquare",adaptive=FALSE, 
   ########################## Now the problem for the golden selection is too computationally heavy
     #Select the bandwidth by golden selection
     bw<-NA
-    if(approach=="cv"||approach=="CV")
-       bw <- gold(gwr.cv,lower,upper,adapt.bw=adaptive,x,y,kernel,adaptive, dp.locat, p, theta, longlat,dMat)
-    else if(approach=="aic"||approach=="AIC"||approach=="AICc")
-       bw<-gold(gwr.aic,lower,upper,adapt.bw=adaptive,x,y,kernel,adaptive, dp.locat, p, theta, longlat,dMat)    
+    if(approach == "cv" || approach == "CV")
+       bw <- gold(gwr.cv, lower, upper, adapt.bw = adaptive, x, y, kernel, adaptive, dp.locat, p, theta, longlat, dMat, T, parallel, cl)
+    else if(approach == "aic" || approach == "AIC" || approach == "AICc")
+       bw <- gold(gwr.aic, lower, upper, adapt.bw = adaptive, x, y, kernel, adaptive, dp.locat, p, theta, longlat, dMat, T, parallel, cl)    
    # bw<-NA
 #    if(approach=="cv"||approach=="CV")
 #       bw <- optimize(bw.cv,lower=lower,upper=upper,maximum=FALSE,X=x,Y=y,kernel=kernel,
@@ -107,90 +108,91 @@ bw.gwr<-function(formula, data, approach="CV",kernel="bisquare",adaptive=FALSE, 
 
 ####Calculate the CV score with a given bandwidth
 ##Author: Binbin Lu
-gwr.cv<-function(bw, X, Y, kernel="bisquare",adaptive=FALSE, dp.locat, p=2, theta=0, longlat=F,dMat, verbose=T)
+gwr.cv<-function(bw, X, Y, kernel="bisquare",adaptive=FALSE, dp.locat, p=2, theta=0, longlat=F,dMat, verbose=T,parallel=F,cl=NULL)
 {
-   dp.n<-length(dp.locat[,1])
-   #########Distance matrix is given or not
+  dp.n<-length(dp.locat[,1])
+  #########Distance matrix is given or not
 
-  if (is.null(dMat))
-      DM.given<-F
-  else
-  {
+  if (missing(dMat)) dMat <- matrix(0, 0, 0)
+  else if (is.null(dMat) || !is.matrix(dMat)) {
+    DM.given<-F
+    dMat <- matrix(0, 0, 0)
+  }
+  else {
     DM.given<-T
     dim.dMat<-dim(dMat)
     if (dim.dMat[1]!=dp.n||dim.dMat[2]!=dp.n)
     stop ("Dimensions of dMat are not correct")
   }
   ############################################CV
-  CV<-numeric(dp.n)
-  for (i in 1:dp.n)
-  {
-    if (DM.given)
-         dist.vi<-dMat[,i]
-    else
-    {
-       dist.vi<-gw.dist(dp.locat=dp.locat, focus=i, p=p, theta=theta, longlat=longlat)         
+  gw.resi <- NULL
+  if (parallel == FALSE) {
+    gw.resi <- try(gw_cv_all(X, Y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive))
+    if(!inherits(gw.resi, "try-error")) CV.score <- gw.resi 
+    else CV.score <- Inf
+  } else if (parallel == "omp") {
+    if (missing(cl)) { threads <- 0 } else {
+      threads <- ifelse(is(cl, "numeric"), cl, 0)
     }
-    W.i<-gw.weight(dist.vi,bw,kernel,adaptive)
-    #W.i<-gwr.Gauss(dist.vi^2, bw)
-    #print(W.i)
-    W.i[i]<-0
-    ##lm.i <- try(lm.wfit(y = y, x = x, w = w.i))
-    gw.resi<- try(gw_reg(X, Y, W.i, FALSE, i))
-  
-    #gw.resi <- try(lm.wfit(y = Y, x = X, w = W.i))
-    
-    if(!inherits(gw.resi, "try-error"))
-    {
-      #b <- coefficients(gw.resi)
-      yhat.noi<-X[i,]%*%gw.resi[[1]]
-      #CV[i] <- Y[i] - (t(b) %*% X[i,])
-      CV[i]<-Y[i]-yhat.noi
-      
+    gw.resi <- try(gw_cv_all_omp(X, Y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive, threads))
+    if(!inherits(gw.resi, "try-error")) CV.score <- gw.resi 
+    else CV.score <- Inf
+  } else if (parallel == "cluster") {
+    if (missing(cl)) {
+      cl.n <- max(detectCores() - 4, 2)
+      cl <- makeCluster(cl.n)
+    } else cl.n <- length(cl)
+    clusterCall(cl, function() { library(GWmodel) })
+    cl.results <- clusterApplyLB(cl, 1:cl.n, function(group.i, cl.n, x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive) {
+      cv.result <- gw_cv_all(x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive, cl.n, group.i)
+      if(!inherits(gw.resi, "try-error")) return(cv.result) 
+      else return(Inf)
+    }, cl.n, x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive)
+    gw.resi <- unlist(cl.results)
+    if (any(is.infinite(gw.resi))) CV.score <- sum(gw.resi)
+    else CV.score <- Inf
+    if (missing(cl)) stopCluster(cl)
+  } else {
+    CV<-numeric(dp.n)
+    for (i in 1:dp.n) {
+      if (DM.given) dist.vi<-dMat[,i]
+      else dist.vi<-gw.dist(dp.locat=dp.locat, focus=i, p=p, theta=theta, longlat=longlat)
+      W.i<-gw.weight(dist.vi,bw,kernel,adaptive)
+      W.i[i]<-0
+      gw.resi<- try(gw_reg(X, Y, W.i, FALSE, i))
+      if(!inherits(gw.resi, "try-error")) {
+        yhat.noi<-X[i,]%*%gw.resi[[1]]
+        CV[i]<-Y[i]-yhat.noi
+      } else {
+        CV[i]<-Inf
+        break
+      }
     }
-    else
-    {
-      CV[i]<-Inf
-      break
-    }
+    if (!any(is.infinite(CV))) CV.score<-t(CV) %*% CV
+    else CV.score<-Inf
   }
-  if (!any(is.infinite(CV)))
-     CV.score<-t(CV) %*% CV
-  else
-     {
-        CV.score<-Inf
-     }
-  if(verbose)
-  {
-    if(adaptive)
-      cat("Adaptive bandwidth:", bw, "CV score:", CV.score, "\n")
-    else
-      cat("Fixed bandwidth:", bw, "CV score:", CV.score, "\n")
+  if(verbose) {
+    if(adaptive) cat("Adaptive bandwidth:", bw, "CV score:", CV.score, "\n")
+    else cat("Fixed bandwidth:", bw, "CV score:", CV.score, "\n")
   }
   CV.score
 }
 
-gwr.cv.contrib<-function(bw, X, Y, kernel="bisquare",adaptive=FALSE, dp.locat, p=2, theta=0, longlat=F,dMat)
+gwr.cv.contrib<-function(bw, X, Y, kernel="bisquare",adaptive=FALSE, dp.locat, p=2, theta=0, longlat=F,dMat,parallel=F,cl=NULL)
 {
    dp.n<-length(dp.locat[,1])
    #########Distance matrix is given or not
 
-  if (is.null(dMat))
-      DM.given<-F
-  else
-  {
-    if(dim(dMat)[1]==1)
-    {
+  if (is.null(dMat)) DM.given<-F
+  else {
+    if(dim(dMat)[1]==1) {
       DM.given <- F
-    }
-    else
-    {
+    } else {
       DM.given<-T
       dim.dMat<-dim(dMat)
       if (dim.dMat[1]!=dp.n||dim.dMat[2]!=dp.n)
-         stop ("Dimensions of dMat are not correct")
+        stop("Dimensions of dMat are not correct")
     }
-    
   }
   ############################################CV
   CV<-numeric(dp.n)
@@ -215,13 +217,8 @@ gwr.cv.contrib<-function(bw, X, Y, kernel="bisquare",adaptive=FALSE, dp.locat, p
 
     if(!inherits(gw.resi, "try-error"))
     {
-      #b <- coefficients(gw.resi)
-      yhat.noi<-X[i,]%*%gw.resi[[1]]
-      #yhat.noi<- fitted(mat X, mat beta) 
-      #CV[i] <- Y[i] - (t(b) %*% X[i,])
-      CV[i]<-Y[i]-yhat.noi
-      #CV[i]<-ehat(Y[i], X[i,], gw.resi[[1]])
-      
+      yhat.noi <- X[i,] %*% gw.resi[[1]]
+      CV[i] <- Y[i] - yhat.noi
     }
     else
     {
@@ -233,79 +230,99 @@ gwr.cv.contrib<-function(bw, X, Y, kernel="bisquare",adaptive=FALSE, dp.locat, p
 }
 ####Calculate the AICc with a given bandwidth
 ##Author: Binbin Lu
-gwr.aic<-function(bw, X, Y, kernel="bisquare",adaptive=FALSE, dp.locat, p=2, theta=0, longlat=F,dMat, verbose=T)
+gwr.aic<-function(bw, X, Y, kernel="bisquare",adaptive=FALSE, dp.locat, p=2, theta=0, longlat=F,dMat, verbose=T,parallel=F,cl=NULL)
 {
-   dp.n<-length(dp.locat[,1])
-   var.n <- ncol(X)
-   #########Distance matrix is given or not
+  dp.n<-length(dp.locat[,1])
+  var.n <- ncol(X)
+  #########Distance matrix is given or not
 
-  if (is.null(dMat))
-      DM.given<-F
-  else
-  {
+  if (missing(dMat)) {
+    DM.given <- F
+    dMat <- matrix(0, 0, 0)
+  }
+  else if (is.null(dMat) || !is.matrix(dMat)) {
+    DM.given<-F
+    dMat <- matrix(0, 0, 0)
+  }
+  else {
     DM.given<-T
     dim.dMat<-dim(dMat)
     if (dim.dMat[1]!=dp.n||dim.dMat[2]!=dp.n)
-    stop ("Dimensions of dMat are not correct")
+      stop ("Dimensions of dMat are not correct")
   }
   ############################################AIC
   ###In this function, the whole hatmatrix is not fully calculated and only the diagonal elements are computed
-  # S<-matrix(nrow=dp.n,ncol=dp.n)
-  s_hat <- numeric(2)
-  betas <- matrix(nrow = dp.n, ncol = var.n)
-  for (i in 1:dp.n)
-  {
-    if (DM.given)
-         dist.vi<-dMat[,i]
-    else
-    {
-       dist.vi<-gw.dist(dp.locat=dp.locat, focus=i, p=p, theta=theta, longlat=longlat)
+  AICc.value <- Inf
+  if (parallel == FALSE) {
+    res <- try(gw_reg_all(X, Y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive))
+    if(!inherits(res, "try-error")) {
+      betas <- res$betas
+      s_hat <- res$s_hat
+      AICc.value <- AICc1(Y, X, betas, s_hat)
     }
-    W.i<-gw.weight(dist.vi,bw,kernel,adaptive)
-    res<- try(gw_reg(X,Y,W.i,TRUE,i))
-    #Ci=solve(t(X*W.i)%*%X)%*%{t(X*W.i)}
-    #fun2<-function(X,W.i) {Ci<-solve(t(X*W.i)%*%X)%*%{t(X*W.i)}}
-    #Ci<-try(fun2(X,W.i))
-    
-    #Ci<-solve(t(X*W.i)%*%X)%*%{t(X*W.i)}
-   # gw.resi<-gw.reg(X,Y,W.i,hatmatrix=T,focus=i)
-    #betas[i,]<-gw.resi[[1]] ######See function by IG
-    #S[i,]<-gw.resi[[2]]
-    if(!inherits(res, "try-error"))
-    {
-      si <- res[[2]]
-      s_hat[1] = s_hat[1] + si[i]
-      s_hat[2] = s_hat[2] + sum(tcrossprod(si))
-      betas[i,] <- res[[1]]
+    else AICc.value <- Inf
+  } else if (parallel == "omp") {
+    if (missing(cl)) { threads <- 0 } else {
+      threads <- ifelse(is(cl, "numeric"), cl, 0)
     }
-    else
-    {
-      s_hat[1] <- Inf
-      s_hat[2] <- Inf
-      break
-    }  
+    res <- try(gw_reg_all_omp(X, Y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, threads))
+    if(!inherits(res, "try-error")) {
+      betas <- res$betas
+      s_hat <- res$s_hat
+      AICc.value <- AICc1(Y, X, betas, s_hat)
+    }
+    else AICc.value <- Inf
+  } else if (parallel == "cluster") {
+    if (missing(cl)) {
+      cl.n <- max(detectCores() - 4, 2)
+      cl <- makeCluster(cl.n)
+    } else cl.n <- length(cl)
+    clusterCall(cl, function() { library(GWmodel) })
+    cl.results <- clusterApplyLB(cl, 1:cl.n, function(group.i, cl.n, x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive) {
+      res <- try(gw_reg_all(x, y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, cl.n, group.i))
+      if(!inherits(res, "try-error")) return(res) 
+      else return(NULL)
+    }, cl.n, X, Y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive)
+    if (!any(is.null(cl.results))) {
+      betas <- matrix(nrow = dp.n, ncol=var.n)
+      s_hat <- numeric(2)
+      for (i in 1:cl.n) {
+        res <- cl.results[[i]]
+        betas = betas + res$betas
+        s_hat = s_hat + res$s_hat
+      }
+      AICc.value <- AICc1(Y, X, betas, s_hat)
+    } else AICc.value <- Inf
+    if (missing(cl)) stopCluster(cl)
+  } else {
+    s_hat <- numeric(2)
+    betas <- matrix(nrow = dp.n, ncol = var.n)
+    for (i in 1:dp.n) {
+      if (DM.given) dist.vi <- dMat[,i]
+      else dist.vi <- gw.dist(dp.locat=dp.locat, focus=i, p=p, theta=theta, longlat=longlat)
+      W.i <- gw.weight(dist.vi,bw,kernel,adaptive)
+      res<- try(gw_reg(X,Y,W.i,TRUE,i))
+      if(!inherits(res, "try-error")) {
+        si <- res[[2]]
+        s_hat[1] = s_hat[1] + si[i]
+        s_hat[2] = s_hat[2] + sum(tcrossprod(si))
+        betas[i,] <- res[[1]]
+      } else {
+        s_hat[1] <- Inf
+        s_hat[2] <- Inf
+        break
+      }  
+    }
+    if (!any(is.infinite(s_hat))) {
+      AICc.value <- AICc1(Y, X, betas, s_hat)
+    } else AICc.value<-Inf
   }
-  
-  if (!any(is.infinite(s_hat)))
-  {
-    #tr.S<-sum(diag(S))
-#    RSS.gw<-t(Y)%*%t(diag(dp.n)-S)%*%(diag(dp.n)-S)%*%Y
-#    sigma.hat2 <- RSS.gw/dp.n
-#    AICc<-dp.n*log(sigma.hat2) + dp.n*log(2*pi) + dp.n *((dp.n + tr.S) / (dp.n - 2 - tr.S))
-     AICc<-AICc1(Y, X, betas, s_hat)
+  if(is.nan(AICc.value)) AICc.value <- Inf
+  if(verbose) {     
+    if(adaptive) cat("Adaptive bandwidth (number of nearest neighbours):", bw, "AICc value:", AICc.value, "\n")
+    else cat("Fixed bandwidth:", bw, "AICc value:", AICc.value, "\n")
   }
-  else
-    AICc<-Inf
-  if(is.nan(AICc))
-      AICc <- Inf
-  if(verbose)
-  {     
-    if(adaptive)
-      cat("Adaptive bandwidth (number of nearest neighbours):", bw, "AICc value:", AICc, "\n")
-    else
-      cat("Fixed bandwidth:", bw, "AICc value:", AICc, "\n")
-  }
-  AICc
+  AICc.value
 }
 
 

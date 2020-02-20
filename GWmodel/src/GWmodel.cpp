@@ -1051,3 +1051,66 @@ List gw_reg_all_omp(mat x, vec y, mat dp, bool rp_given, mat rp, bool dm_given, 
     }
   }
 }
+
+// [[Rcpp::export]]
+double gw_cv_all(mat x, vec y, mat dp, bool dm_given, mat dmat, 
+                 double p, double theta, bool longlat, 
+                 double bw, int kernel, bool adaptive,
+                 int ngroup, int igroup) {
+  int n = dp.n_rows;
+  double cv = 0.0;
+  int lgroup = floor(((double)n) / ngroup);
+  int iStart = igroup * lgroup, iEnd = (igroup + 1 < ngroup) ? (igroup + 1) * lgroup : n;
+  for (int i = iStart; i < iEnd; i++) {
+    mat d = dm_given ? dmat.col(i) : gw_dist(dp, dp, i, p, theta, longlat, false);
+    mat w = gw_weight(d, bw, kernel, adaptive);
+    w(i, 0) = 0.0;
+    mat ws(1, x.n_cols, fill::ones);
+    mat xtw = trans(x %(w * ws));
+    mat xtwx = xtw * x;
+    mat xtwy = trans(x) * (w % y);
+    mat xtwx_inv = inv(xtwx);
+    mat betas = xtwx_inv * xtwy;
+    double res = y(i) - det(x.row(i) * betas);
+    cv += res * res;
+  }
+  return cv;
+}
+
+// [[Rcpp::export]]
+double gw_cv_all_omp(mat x, vec y, mat dp, bool dm_given, mat dmat, 
+                     double p, double theta, bool longlat, 
+                     double bw, int kernel, bool adaptive,
+                     int threads, int ngroup, int igroup) {
+  int n = dp.n_rows;
+  int thread_nums = omp_get_num_procs() - 1;
+  vec cv(thread_nums, fill::zeros);
+  int lgroup = floor(((double)n) / ngroup);
+  int iStart = igroup * lgroup, iEnd = (igroup + 1 < ngroup) ? (igroup + 1) * lgroup : n;
+  bool flag_error = false;
+#pragma omp parallel for num_threads(thread_nums)
+  for (int i = iStart; i < iEnd; i++) {
+    if (!flag_error) {
+      int thread_id = threads > 0 ? threads : omp_get_thread_num();
+      mat d = dm_given ? dmat.col(i) : gw_dist(dp, dp, i, p, theta, longlat, false);
+      mat w = gw_weight(d, bw, kernel, adaptive);
+      w(i, 0) = 0.0;
+      mat ws(1, x.n_cols, fill::ones);
+      mat xtw = trans(x %(w * ws));
+      mat xtwx = xtw * x;
+      mat xtwy = trans(x) * (w % y);
+      try {
+        mat xtwx_inv = inv(xtwx);
+        mat betas = xtwx_inv * xtwy;
+        double res = y(i) - det(x.row(i) * betas);
+        cv(thread_id) += res * res;
+      } catch (...) {
+        flag_error = true;
+      }
+    }
+  }
+  if (flag_error) {
+    throw exception("Matrix seems singular.");
+  }
+  return sum(cv);
+}

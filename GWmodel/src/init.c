@@ -40,6 +40,8 @@ extern SEXP GWmodel_scgwr_reg(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SE
 extern SEXP GWmodel_gw_dist(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP GWmodel_gw_reg_all(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP GWmodel_gw_reg_all_omp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP GWmodel_gw_cv_all(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP GWmodel_gw_cv_all_omp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 
 
 static const R_CallMethodDef CallEntries[] = {
@@ -80,6 +82,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"GWmodel_gw_dist",           (DL_FUNC) &GWmodel_gw_dist,           7},
     {"GWmodel_gw_reg_all",        (DL_FUNC) &GWmodel_gw_reg_all,        16},
     {"GWmodel_gw_reg_all_omp",    (DL_FUNC) &GWmodel_gw_reg_all_omp,    17},
+    {"GWmodel_gw_cv_all",         (DL_FUNC) &GWmodel_gw_cv_all,         13},
+    {"GWmodel_gw_cv_all_omp",     (DL_FUNC) &GWmodel_gw_cv_all_omp,     14},
     {NULL, NULL, 0}
 };
 
