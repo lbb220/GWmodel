@@ -39,7 +39,7 @@
 #Belsey-Kuh-Welsh condition number
 #Variance Inflation Factors
 #Variance decomposition proportions
-gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", adaptive=FALSE, p=2, theta=0, longlat=F, dMat, F123.test=F, cv=F, W.vect=NULL, , parallel = FALSE, cl)
+gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", adaptive=FALSE, p=2, theta=0, longlat=F, dMat, F123.test=F, cv=F, W.vect=NULL, parallel = FALSE, cl)
 {
   ##Record the start time
   timings <- list()
@@ -267,18 +267,7 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
     } else {
       dybar2 <- t(dybar2)
       dyhat2 <- t(dyhat2)
-      for(i in 1:dp.n)
-      {
-        if (DM.given) dist.vi <- dMat[,i] else {
-          if (rp.given) dist.vi <- gw.dist(dp.locat, rp.locat, focus=i, p, theta, longlat)
-          else dist.vi <- gw.dist(dp.locat=dp.locat, focus=i, p=p, theta=theta, longlat=longlat)
-        }
-        W.i <- gw.weight(dist.vi, bw, kernel, adaptive)
-        if (!is.null(W.vect)) W.i<-W.i*W.vect
-        TSSw <- dybar2 %*% W.i
-        RSSw <- dyhat2 %*% W.i
-        local.R2[i] <- (TSSw - RSSw) / TSSw
-      }
+      local.R2 <- gw_local_r2(dp.locat, dybar2, dyhat2, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive)
     }
     AIC <- diags[1]
     AICc <- diags[2]

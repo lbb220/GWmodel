@@ -136,7 +136,7 @@ scgwr_pre <- function(x, y, bw, poly, b0, g0, neighbour) {
 }
 
 #scgwr_reg(mat x, vec y, int bw, int poly, mat G0, mat Mx0, mat My0, mat XtX, mat XtY, mat neighbour, vec parameters);
-scgwr_reg <- function( x, y, bw, poly, G0, Mx0, My0, XtX, XtY, neighbour, parameters) {
+scgwr_reg <- function(x, y, bw, poly, G0, Mx0, My0, XtX, XtY, neighbour, parameters) {
     .Call('GWmodel_scgwr_reg', PACKAGE = 'GWmodel', x, y, bw, poly, G0, Mx0, My0, XtX, XtY, neighbour, parameters)
 }
 
@@ -213,4 +213,14 @@ gw_cv_all_cuda <- function(x, y, dp.locat, dm.given, dmat, p, theta, longlat, bw
                        boxcar   = 4)
   .Call('GWmodel_gw_cv_all_cuda', PACKAGE = 'GWmodel', 
         x, y, dp.locat, dm.given, dmat, p, theta, longlat, bw, kernel.id, adaptive, groupl, gpuID - 1)
+}
+
+gw_local_r2 <- function(dp, dybar2, dyhat2, dm_given, dmat, p, theta, longlat, bw, kernel, adaptive) {
+  kernel.id <- switch (kernel,
+                       gaussian = 0,
+                       exponential = 1,
+                       bisquare = 2,
+                       tricube  = 3,
+                       boxcar   = 4)
+  .Call('GWmodel_gw_local_r2', PACKAGE = 'GWmodel', dp, dybar2, dyhat2, dm_given, dmat, p, theta, longlat, bw, kernel.id, adaptive)
 }

@@ -25,6 +25,7 @@ extern SEXP GWmodel_gauss_wt_mat(SEXP, SEXP);
 extern SEXP GWmodel_gauss_wt_vec(SEXP, SEXP);
 extern SEXP GWmodel_gw_reg(SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP GWmodel_gwr_diag(SEXP, SEXP, SEXP, SEXP);
+extern SEXP GWmodel_gwr_diag1(SEXP, SEXP, SEXP, SEXP);
 extern SEXP GWmodel_md_dist_mat(SEXP, SEXP);
 extern SEXP GWmodel_md_dist_smat(SEXP);
 extern SEXP GWmodel_md_dist_vec(SEXP, SEXP);
@@ -42,6 +43,7 @@ extern SEXP GWmodel_gw_reg_all(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, S
 extern SEXP GWmodel_gw_reg_all_omp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP GWmodel_gw_cv_all(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP GWmodel_gw_cv_all_omp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP GWmodel_gw_local_r2(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 
 #ifdef CUDA_ACCE
 extern SEXP GWmodel_gw_reg_cuda(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
@@ -71,6 +73,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"GWmodel_gauss_wt_vec",      (DL_FUNC) &GWmodel_gauss_wt_vec,      2},
     {"GWmodel_gw_reg",            (DL_FUNC) &GWmodel_gw_reg,            5},
     {"GWmodel_gwr_diag",          (DL_FUNC) &GWmodel_gwr_diag,          4},
+    {"GWmodel_gwr_diag1",          (DL_FUNC) &GWmodel_gwr_diag1,        4},
     {"GWmodel_md_dist_mat",       (DL_FUNC) &GWmodel_md_dist_mat,       2},
     {"GWmodel_md_dist_smat",      (DL_FUNC) &GWmodel_md_dist_smat,      1},
     {"GWmodel_md_dist_vec",       (DL_FUNC) &GWmodel_md_dist_vec,       2},
@@ -88,6 +91,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"GWmodel_gw_reg_all_omp",    (DL_FUNC) &GWmodel_gw_reg_all_omp,    17},
     {"GWmodel_gw_cv_all",         (DL_FUNC) &GWmodel_gw_cv_all,         13},
     {"GWmodel_gw_cv_all_omp",     (DL_FUNC) &GWmodel_gw_cv_all_omp,     14},
+    {"GWmodel_gw_local_r2",       (DL_FUNC) &GWmodel_gw_local_r2,       11},
 #ifdef CUDA_ACCE
     {"GWmodel_gw_reg_cuda",       (DL_FUNC) &GWmodel_gw_reg_cuda,       16},
     {"GWmodel_gw_cv_all_cuda",    (DL_FUNC) &GWmodel_gw_cv_all_cuda,    13},

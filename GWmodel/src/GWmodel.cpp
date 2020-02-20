@@ -1,6 +1,8 @@
 // [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::plugins(openmp)]]
 #include <RcppArmadillo.h>
 #include <math.h>
+#include <omp.h>
 using namespace Rcpp;
 using namespace arma;
 
@@ -1120,4 +1122,18 @@ double gw_cv_all_omp(mat x, vec y, mat dp, bool dm_given, mat dmat,
     throw exception("Matrix seems singular.");
   }
   return sum(cv);
+}
+
+// [[Rcpp::export]]
+vec gw_local_r2(mat dp, vec dybar2, vec dyhat2, bool dm_given, mat dmat, double p, double theta, bool longlat, double bw, int kernel, bool adaptive) {
+  int n = dp.n_rows;
+  vec localR2(n, fill::zeros);
+  for (int i = 0; i < n; i++) {
+    mat d = dm_given ? dmat.col(i) : gw_dist(dp, dp, i, p, theta, longlat, false);
+    mat w = gw_weight(d, bw, kernel, adaptive);
+    double tss = sum(dybar2 % w);
+    double rss = sum(dyhat2 % w);
+    localR2(i) = (tss - rss) / tss;
+  }
+  return localR2;
 }
