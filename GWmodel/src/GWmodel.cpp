@@ -846,3 +846,61 @@ mat gw_dist(mat dp, mat rp, int focus, double p, double theta, bool longlat, boo
     }
   }
 }
+
+double gw_weight_gaussian(double dist, double bw) {
+  return exp(pow(dist, 2)/((-2)*pow(bw, 2)));
+}
+
+double gw_weight_exponential(double dist, double bw) {
+  return exp(-dist/bw);
+}
+
+double gw_weight_bisquare(double dist, double bw) {
+  return dist > bw ? 0 : pow(1 - pow(dist, 2)/pow(bw, 2), 2);
+}
+
+double gw_weight_tricube(double dist, double bw) {
+  return dist > bw ? 0 : pow(1 - pow(dist, 3)/pow(bw, 3), 3);
+}
+
+double gw_weight_boxcar(double dist, double bw) {
+  return dist > bw ? 0 : 1;
+}
+
+typedef double (*KERNEL)(double, double);
+const KERNEL GWRKernel[5] = {
+  gw_weight_gaussian,
+  gw_weight_exponential,
+  gw_weight_bisquare,
+  gw_weight_tricube,
+  gw_weight_boxcar
+};
+
+// [[Rcpp::export]]
+mat gw_weight(mat dist, double bw, int kernel, bool adaptive) {
+  dist = trans(dist);
+  const KERNEL *kerf = GWRKernel + kernel;
+  int nc = dist.n_cols, nr = dist.n_rows;
+  mat w(nr, nc, fill::zeros);
+  if (adaptive) {
+    for (int r = 0; r < nr; r++) {
+      double dn = bw / nc, fixbw = 0;
+      if (dn <= 1) {
+        mat vdist = sort(dist.row(r));
+        fixbw = vdist(0, int(bw) - 1);
+      } else {
+        fixbw = dn * max(dist.row(r));
+      }
+      for (int c = 0; c < nc; c++) {
+        w(r, c) = (*kerf)(dist(r, c), fixbw);
+      }
+    }
+  } else {
+    for (int r = 0; r < nr; r++) {
+      for (int c = 0; c < nc; c++) {
+        w(r, c) = (*kerf)(dist(r, c), bw);
+      }
+    }
+  }
+  return trans(w);
+}
