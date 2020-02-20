@@ -1,6 +1,6 @@
 Package: GWmodel
 Type: Package
-Version: 2.1-4
+Version: 2.2-0
 Date: 2020-01-08
 Title: Geographically-Weighted Models
 Depends: R (>= 3.0.0),maptools (>= 0.5-2),
