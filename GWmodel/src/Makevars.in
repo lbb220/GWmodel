@@ -1,6 +1,6 @@
-PKG_CXXFLAGS = -std=gnu++11 -ARMA_64BIT_WORD=1 $(SHLIB_OPENMP_CXXFLAGS)
-CUDA_LIBS =   -L@CUDA_LIBDIR@ -Wl,-rpath=@CUDA_LIBDIR@ -lcudart -lcublas
-PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) $(SHLIB_OPENMP_CXXFLAGS)
+PKG_CXXFLAGS = -ARMA_64BIT_WORD=1 $(SHLIB_OPENMP_CXXFLAGS)
+CUDA_LIBS =   @CUDA_LIBS@
+PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) $(SHLIB_OPENMP_CXXFLAGS) @PKG_LIBS@
 R_LIBS = @R_LIBS@
 ENABLE_CUDA = @ENABLE_CUDA@
 GWmodel_CUDA_LIB_PATH=@GWmodel_CUDA_LIB_PATH@
@@ -8,18 +8,14 @@ GWmodel_CUDA_LIB_PATH=@GWmodel_CUDA_LIB_PATH@
 # R_PACKAGE_DIR=@R_PACKAGE_DIR@
 # R_PACKAGE_DIR_REAL=@R_PACKAGE_DIR_REAL@
 
-ifeq (${ENABLE_CUDA},1)
-cu_sources =  GWmodelKernel.cu
-cu_sharedlibs = GWmodelKernel.o
-cpp_sources_cuda = CGWmodelCUDA.cpp IGWmodelCUDA.cpp
-cpp_sharedlibs_cuda = CGWmodelCUDA.o IGWmodelCUDA.o
-OBJECTS_CUDA = ${cu_sharedlibs} ${cpp_sharedlibs_cuda}
+cu_sources = @cu_sources@
+cu_sharedlibs =@cu_sharedlibs@
+cpp_sources_cuda =  @cpp_sources_cuda@
+cpp_sharedlibs_cuda =  @cpp_sharedlibs_cuda@
+OBJECTS_CUDA =  @OBJECTS_CUDA@
 
-DEFS = -DCUDA_ACCE
-TARGET_CUDA_LIB = libgwmodelcuda.so
-
-PKG_LIBS += ${CUDA_LIBS} -L${HOME}/.cache/GWmodel -Wl,-rpath=${HOME}/.cache/GWmodel  -lgwmodelcuda
-endif
+CDEFS =  @CDEFS@
+TARGET_CUDA_LIB =@TARGET_CUDA_LIB@
 
 cpp_sources = RcppExports.cpp GWmodel.cpp
 cpp_sharedlibs= RcppExports.o GWmodel.o
@@ -65,6 +61,7 @@ ${TARGET_CUDA_LIB}: ${OBJECTS_CUDA}
 	# cp  -r $@ ${R_PACKAGE_DIR}/libs
 	mkdir -p ${GWmodel_CUDA_LIB_PATH}
 	cp $@ ${GWmodel_CUDA_LIB_PATH}
+	chown -R ${USER}:${USER} ${HOME}/.cache/GWmodel
 
 
 GWmodel.so : ${TARGET_CUDA_LIB} ${OBJECTS_CUDA} ${OBJECTS}
@@ -76,7 +73,7 @@ ${cu_sharedlibs}: %.o: %.cu
 	$(NVCC) $(CU_ARCH) $(CU_ARGS) $(CU_INCL) $< -c
 
 ${cpp_sharedlibs}: %.o :%.cpp
-	${CXX} $(CXX_ARGS)  $(DEFS) $(R_INC) $< -c
+	${CXX} $(CXX_ARGS)  $(CDEFS) $(R_INC) $< -c
 
 clean: 
 	rm -rf  *.o Makevars

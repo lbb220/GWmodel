@@ -87,6 +87,25 @@ fi
 
 if test ${ENABLE_CUDA} -eq 1; then
     AC_MSG_RESULT(You have CUDA environment and we will compile the cuda function for you)
+	cu_sources="GWmodelKernel.cu"
+	cu_sharedlibs="GWmodelKernel.o"
+	cpp_sources_cuda="CGWmodelCUDA.cpp IGWmodelCUDA.cpp"
+	cpp_sharedlibs_cuda="CGWmodelCUDA.o IGWmodelCUDA.o"
+	OBJECTS_CUDA="${cu_sharedlibs} ${cpp_sharedlibs_cuda}"
+
+	CDEFS="-DCUDA_ACCE"
+	TARGET_CUDA_LIB="libgwmodelcuda.so"
+
+	CUDA_LIBS="-L${CUDA_LIBDIR} -Wl,-rpath=${CUDA_LIBDIR} -lcudart -lcublas "
+	PKG_LIBS=${PKG_LIBS}"${CUDA_LIBS} -L${HOME}/.cache/GWmodel -Wl,-rpath=${HOME}/.cache/GWmodel  -lgwmodelcuda"
+	AC_SUBST(cu_sources)
+	AC_SUBST(cu_sharedlibs)
+	AC_SUBST(cpp_sources_cuda)
+	AC_SUBST(cpp_sharedlibs_cuda)
+	AC_SUBST(OBJECTS_CUDA)
+	AC_SUBST(CDEFS)
+	AC_SUBST(TARGET_CUDA_LIB)
+	AC_SUBST(CUDA_LIBS)
 fi
 
 
@@ -106,6 +125,7 @@ else
 	AC_SUBST(R_PACKAGE_DIR_REAL)
 	AC_SUBST(R_PACKAGE_DIR)
 fi
+
 
 AC_SUBST(GWmodel_CUDA_LIB_PATH,["~/.cache/GWmodel"])
 
