@@ -1,4 +1,4 @@
-AC_INIT([GWmodel], 1.0-2)
+AC_INIT([GWmodel], 2.2-0)
 
 AC_LANG(C++)
 AC_REQUIRE_CPP
