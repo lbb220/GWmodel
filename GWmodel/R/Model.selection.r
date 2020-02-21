@@ -203,21 +203,21 @@ model.selection.gwr <-function(DeVar=NULL,InDeVars=NULL, data=list(),bw=NULL,app
       betas <- matrix(nrow = dp.n, ncol = var.n)
       s_hat <- numeric(2)
       if (parallel.method == FALSE) {
-        res <- gw_reg_all(X, Y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive)
+        res <- gw_reg_all(x, y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive)
         betas <- res$betas
         s_hat <- res$s_hat
       } else if (parallel.method == "omp") {
         if (missing(parallel.arg)) { threads <- 0 } else {
           threads <- ifelse(is(parallel.arg, "numeric"), parallel.arg, 0)
         }
-        res <- gw_reg_all_omp(X, Y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, threads)
+        res <- gw_reg_all_omp(x, y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, threads)
         betas <- res$betas
         s_hat <- res$s_hat
       } else if (parallel.method == "cuda") {
         if (missing(parallel.arg)) { groupl <- 0 } else {
           groupl <- ifelse(is(parallel.arg, "numeric"), parallel.arg, 0)
         }
-        res <- gw_reg_all_cuda(X, Y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, groupl)
+        res <- gw_reg_all_cuda(x, y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, groupl)
         betas <- res$betas
         s_hat <- res$s_hat
       } else if (parallel.method == "cluster") {

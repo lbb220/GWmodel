@@ -154,7 +154,7 @@ gwr.cv<-function(bw, X, Y, kernel="bisquare",adaptive=FALSE, dp.locat, p=2, thet
       cv.result <- gw_cv_all(x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive, parallel.arg.n, group.i)
       if(!inherits(gw.resi, "try-error")) return(cv.result) 
       else return(Inf)
-    }, parallel.arg.n, x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive)
+    }, parallel.arg.n, X, Y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive)
     gw.resi <- unlist(parallel.arg.results)
     if (any(is.infinite(gw.resi))) CV.score <- sum(gw.resi)
     else CV.score <- Inf

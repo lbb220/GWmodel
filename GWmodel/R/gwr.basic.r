@@ -39,7 +39,7 @@
 #Belsey-Kuh-Welsh condition number
 #Variance Inflation Factors
 #Variance decomposition proportions
-gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", adaptive=FALSE, p=2, theta=0, longlat=F, dMat, F123.test=F, cv=F, W.vect=NULL, parallel.method = FALSE, parallel.arg)
+gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", adaptive=FALSE, p=2, theta=0, longlat=F, dMat, F123.test=F, cv=F, W.vect=NULL, parallel.method = FALSE, parallel.arg = NULL)
 {
   ##Record the start time
   timings <- list()
