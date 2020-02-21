@@ -1,4 +1,4 @@
-AC_INIT([ParGWmodel], 1.0-2)
+AC_INIT([GWmodel], 2.2-0)
 
 AC_LANG(C++)
 AC_REQUIRE_CPP
@@ -97,7 +97,7 @@ if test ${ENABLE_CUDA} -eq 1; then
 	TARGET_CUDA_LIB="libgwmodelcuda.so"
 
 	CUDA_LIBS="-L${CUDA_LIBDIR} -Wl,-rpath=${CUDA_LIBDIR} -lcudart -lcublas "
-	PKG_LIBS=${PKG_LIBS}"${CUDA_LIBS} -L${HOME}/.cache/ParGWmodel -Wl,-rpath=${HOME}/.cache/ParGWmodel  -lgwmodelcuda"
+	PKG_LIBS=${PKG_LIBS}"${CUDA_LIBS} -L${HOME}/.cache/GWmodel -Wl,-rpath=${HOME}/.cache/GWmodel  -lgwmodelcuda"
 	AC_SUBST(cu_sources)
 	AC_SUBST(cu_sharedlibs)
 	AC_SUBST(cpp_sources_cuda)
@@ -127,7 +127,7 @@ else
 fi
 
 
-AC_SUBST(GWmodel_CUDA_LIB_PATH,["~/.cache/ParGWmodel"])
+AC_SUBST(GWmodel_CUDA_LIB_PATH,["~/.cache/GWmodel"])
 
 AC_MSG_NOTICE([Building Makevars])
 AC_SUBST(CU_INCL)

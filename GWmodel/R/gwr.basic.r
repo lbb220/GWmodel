@@ -39,7 +39,7 @@
 #Belsey-Kuh-Welsh condition number
 #Variance Inflation Factors
 #Variance decomposition proportions
-gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", adaptive=FALSE, p=2, theta=0, longlat=F, dMat, F123.test=F, cv=F, W.vect=NULL)
+gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", adaptive=FALSE, p=2, theta=0, longlat=F, dMat, F123.test=F, cv=F, W.vect=NULL, parallel.method = FALSE, parallel.arg = NULL)
 {
   ##Record the start time
   timings <- list()
@@ -103,7 +103,7 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
   var.n<-ncol(x)
   rp.n<-nrow(rp.locat)
   dp.n<-nrow(data)
-  betas <-matrix(nrow=rp.n, ncol=var.n)
+  betas <- matrix(0, nrow=rp.n, ncol=var.n)
   if (hatmatrix) {
     betas.SE <-matrix(nrow=rp.n, ncol=var.n)
     betas.TV <-matrix(nrow=rp.n, ncol=var.n)
@@ -150,26 +150,86 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
   # W <- matrix(nrow = dp.n, ncol = rp.n)
   s_hat <- c(0.0, 0.0)
   q.diag <- matrix(0, 1, dp.n)
-  for (i in 1:rp.n) {
-    if (DM.given) dist.vi<-dMat[,i] else {
-      if (rp.given) dist.vi<- gw.dist(dp.locat, rp.locat, focus=i, p, theta, longlat)
-      else dist.vi<- gw.dist(dp.locat=dp.locat, focus=i, p=p, theta=theta, longlat=longlat)
+  if (parallel.method == F) {
+    reg.result <- gw_reg_all(x, y, dp.locat, rp.given, rp.locat, DM.given, dMat, hatmatrix, p, theta, longlat, bw, kernel, adaptive)
+    betas = betas + reg.result$betas
+    if (hatmatrix) {
+      betas.SE = reg.result$betas.SE
+      s_hat = reg.result$s_hat
+      q.diag = reg.result$q.diag
     }
-	W.i <- gw.weight(dist.vi, bw, kernel, adaptive)
-    if (!is.null(W.vect)) W.i <- W.i * W.vect
-    gwsi <- gw_reg(x, y, W.i, hatmatrix, i)
-    betas[i,] <- gwsi[[1]] ######See function by IG
-    if(hatmatrix)
-    {
-      si <- gwsi[[2]]
-      Ci <- gwsi[[3]]
-      betas.SE[i,] <- rowSums(Ci * Ci)
-      s_hat[1] = s_hat[1] + si[i]
-      s_hat[2] = s_hat[2] + sum(si %*% t(si))
-      onei <- numeric(rp.n)
-      onei[i] = 1
-      p_i = onei - si
-      q.diag = q.diag + p_i * p_i
+  } else if (parallel.method == "cuda") {
+    if (missing(parallel.arg)) {
+      groupl <- 0
+    } else {
+      groupl <- ifelse(is(parallel.arg, "numeric"), parallel.arg, 0)
+    }
+    reg.result <- gw_reg_all_cuda(x, y, dp.locat, rp.given, rp.locat, DM.given, dMat, hatmatrix, p, theta, longlat, bw, kernel, adaptive, groupl)
+    if (is(reg.result, "logical") && reg.result == FALSE) {
+      stop("Some CUDA errors occured.")
+    } else {
+      betas = betas + reg.result$betas
+      if (hatmatrix) {
+        betas.SE = reg.result$betas.SE
+        s_hat = reg.result$s_hat
+        q.diag = reg.result$q.diag
+      }
+    }
+  } else if (parallel.method == "omp") {
+    if (missing(parallel.arg)) { threads <- 0 } else {
+      threads <- ifelse(is(parallel.arg, "numeric"), parallel.arg, 0)
+    }
+    reg.result <- gw_reg_all_omp(x, y, dp.locat, rp.given, rp.locat, DM.given, dMat, hatmatrix, p, theta, longlat, bw, kernel, adaptive, threads)
+    betas = betas + reg.result$betas
+    if (hatmatrix) {
+      betas.SE = reg.result$betas.SE
+      s_hat = reg.result$s_hat
+      q.diag = reg.result$q.diag
+    }
+  } else if (parallel.method == "cluster") {
+    if (missing(parallel.arg)) {
+      parallel.arg.n <- max(detectCores() - 4, 2)
+      parallel.arg <- makeCluster(parallel.arg.n)
+    } else parallel.arg.n <- length(parallel.arg)
+    clusterCall(parallel.arg, function() { library(GWmodel) })
+    parallel.arg.results <- clusterApplyLB(parallel.arg, 1:parallel.arg.n, function(group.i, parallel.arg.n, x, y, dp.locat, rp.given, rp.locat, DM.given, dMat, hatmatrix, p, theta, longlat, bw, kernel, adaptive) {
+      reg.result <- gw_reg_all(x, y, dp.locat, rp.given, rp.locat, DM.given, dMat, hatmatrix, p, theta, longlat, bw, kernel, adaptive, parallel.arg.n, group.i)
+      return(reg.result)
+    }, parallel.arg.n, x, y, dp.locat, rp.given, rp.locat, DM.given, dMat, hatmatrix, p, theta, longlat, bw, kernel, adaptive)
+    for (i in 1:parallel.arg.n) {
+      reg.result <- parallel.arg.results[[i]]
+      betas = betas + reg.result$betas
+      if (hatmatrix) {
+        betas.SE = betas.SE + reg.result$betas.SE
+        s_hat = s_hat + reg.result$s_hat
+        q.diag = q.diag + reg.result$q.diag
+      }
+    }
+    if (missing(parallel.arg)) {
+      stopCluster(parallel.arg)
+    }
+  } else {
+    for (i in 1:rp.n) {
+      if (DM.given) dist.vi<-dMat[,i] else {
+        if (rp.given) dist.vi<- gw.dist(dp.locat, rp.locat, focus=i, p, theta, longlat)
+        else dist.vi<- gw.dist(dp.locat=dp.locat, focus=i, p=p, theta=theta, longlat=longlat)
+      }
+      W.i <- gw.weight(dist.vi, bw, kernel, adaptive)
+      if (!is.null(W.vect)) W.i <- W.i * W.vect
+      gwsi <- gw_reg(x, y, W.i, hatmatrix, i)
+      betas[i,] <- gwsi[[1]] ######See function by IG
+      if(hatmatrix)
+      {
+        si <- gwsi[[2]]
+        Ci <- gwsi[[3]]
+        betas.SE[i,] <- rowSums(Ci * Ci)
+        s_hat[1] = s_hat[1] + si[i]
+        s_hat[2] = s_hat[2] + sum(si %*% t(si))
+        onei <- numeric(rp.n)
+        onei[i] = 1
+        p_i = onei - si
+        q.diag = q.diag + p_i * p_i
+      }
     }
   }
   ########################Diagnostic information
@@ -180,8 +240,6 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
     diags <- gwr_diag1(y, x, betas, as.vector(s_hat))
     tr.S <- s_hat[1]
     tr.StS <- s_hat[2]
-    #print(paste("tr.S", tr.S))
-    #print(paste("tr.StS", tr.StS))
     RSS.gw <- diags[5]
     yhat <- gw.fitted(x, betas)
     residual <- y - yhat
@@ -195,7 +253,7 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
     #####Calculate the standard errors of the parameter estimates
     #pseudo-t values
     sigma.hat1 <- RSS.gw / (dp.n - 2 * tr.S + tr.StS)
-    Stud_residual <- residual / t(sqrt(sigma.hat1 * q.diag))
+    Stud_residual <- residual / sqrt(sigma.hat1 * as.vector(q.diag))
     betas.SE <- sqrt(sigma.hat1 * betas.SE)
     betas.TV <- betas / betas.SE
     dybar2 <- (y - mean(y))^2
@@ -208,18 +266,7 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
     } else {
       dybar2 <- t(dybar2)
       dyhat2 <- t(dyhat2)
-      for(i in 1:dp.n)
-      {
-        if (DM.given) dist.vi <- dMat[,i] else {
-          if (rp.given) dist.vi <- gw.dist(dp.locat, rp.locat, focus=i, p, theta, longlat)
-          else dist.vi <- gw.dist(dp.locat=dp.locat, focus=i, p=p, theta=theta, longlat=longlat)
-        }
-        W.i <- gw.weight(dist.vi, bw, kernel, adaptive)
-        if (!is.null(W.vect)) W.i<-W.i*W.vect
-        TSSw <- dybar2 %*% W.i
-        RSSw <- dyhat2 %*% W.i
-        local.R2[i] <- (TSSw - RSSw) / TSSw
-      }
+      local.R2 <- gw_local_r2(dp.locat, dybar2, dyhat2, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive)
     }
     AIC <- diags[1]
     AICc <- diags[2]

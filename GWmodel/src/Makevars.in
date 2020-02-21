@@ -52,7 +52,7 @@ vpath %.cpp ./GWmodelCUDA
 
 .PHONY: all clean
 
-all : ${TARGET_CUDA_LIB} ParGWmodel.so
+all : ${TARGET_CUDA_LIB} GWmodel.so
 
 ${TARGET_CUDA_LIB}: ${OBJECTS_CUDA}
 	${SHLIB_LINK}  -o $@ $^ ${CUDA_LIBS} 
@@ -61,10 +61,10 @@ ${TARGET_CUDA_LIB}: ${OBJECTS_CUDA}
 	# cp  -r $@ ${R_PACKAGE_DIR}/libs
 	mkdir -p ${GWmodel_CUDA_LIB_PATH}
 	cp $@ ${GWmodel_CUDA_LIB_PATH}
-	chown -R ${USER}:${USER} ${HOME}/.cache/ParGWmodel
+	chown -R ${USER}:${USER} ${HOME}/.cache/GWmodel
 
 
-ParGWmodel.so : ${TARGET_CUDA_LIB} ${OBJECTS_CUDA} ${OBJECTS}
+GWmodel.so : ${TARGET_CUDA_LIB} ${OBJECTS_CUDA} ${OBJECTS}
 
 ${cpp_sharedlibs_cuda}: %.o: %.cpp 
 	$(CXX) $(CXX_ARGS)  -DCUDA_ARCH=52 $(R_INC) -I${CUDA_INCL} $< -c
