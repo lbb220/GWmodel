@@ -336,9 +336,18 @@ cudaError_t gw_weight_cuda(double bw, int kernel, bool adaptive, double *d_dists
 			dim3 blockSize(threads), gridSize((ndp + blockSize.x - 1) / blockSize.x);
 			for (size_t f = 0; f < nrp; f++)
 			{
-				thrust::device_ptr<double> v_dists(d_dists);
+				// Backup d_dists, used for sort
+				double *d_dists_bak;
+				cudaMalloc((void **)&d_dists_bak, sizeof(double) * ndp);
+				cudaMemcpy(d_dists_bak, d_dists, sizeof(double) * ndp, cudaMemcpyDeviceToDevice);
+				thrust::device_ptr<double> v_dists(d_dists_bak);
 				thrust::sort(v_dists + f * ndp, v_dists + f * ndp + ndp);
+				// Calculate weight for each distance
 				(*kerf) << <gridSize, blockSize >> > (d_dists + f * ndp, bw < ndp ? bw : ndp, d_weight + f * ndp, ndp, true);
+				// Free d_dists_bak
+				cudaFree(d_dists_bak);
+				d_dists_bak = nullptr;
+				// Get error
 				error = cudaGetLastError();
 				if (error != cudaSuccess)
 				{
