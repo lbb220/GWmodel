@@ -262,60 +262,55 @@ cudaError_t gw_dist_cuda(double *d_dp, double *d_rp, int ndp, int nrp, int focus
 	return cudaSuccess;
 }
 
-__global__ void gw_weight_gaussian_kernel(const double *d_dists, double bw, double *d_weights, int n, bool adaptive)
+__global__ void gw_weight_gaussian_kernel(const double *d_dists, double bw, double *d_weights, int n)
 {
 	int index = blockIdx.x * blockDim.x + threadIdx.x;
 	if (index >= n) return;
 	int i = index;
 	double dist = d_dists[i];
-	double fixbw = adaptive ? d_dists[(int)bw - 1] : bw;
-	d_weights[i] = exp((dist * dist) / ((-2)*(fixbw * fixbw)));
+	d_weights[i] = exp((dist * dist) / ((-2)*(bw * bw)));
 }
 
-__global__ void gw_weight_exponential_kernel(const double *d_dists, double bw, double *d_weights, int n, bool adaptive)
+__global__ void gw_weight_exponential_kernel(const double *d_dists, double bw, double *d_weights, int n)
 {
 	int index = blockIdx.x * blockDim.x + threadIdx.x;
 	if (index >= n) return;
 	int i = index;
 	double dist = d_dists[i];
-	double fixbw = adaptive ? d_dists[(int)bw - 1] : bw;
-	d_weights[i] = exp(-dist / fixbw);
+	d_weights[i] = exp(-dist / bw);
 }
 
-__global__ void gw_weight_bisquare_kernel(const double *d_dists, double bw, double *d_weights, int n, bool adaptive)
+__global__ void gw_weight_bisquare_kernel(const double *d_dists, double bw, double *d_weights, int n)
 {
 	int index = blockIdx.x * blockDim.x + threadIdx.x;
 	if (index >= n) return;
 	int i = index;
 	double dist = d_dists[i];
-	double fixbw = adaptive ? d_dists[(int)bw - 1] : bw;
-	d_weights[i] = dist > fixbw ? 0 : (1 - (dist * dist) / (fixbw * fixbw))*(1 - (dist * dist) / (fixbw * fixbw));
+	d_weights[i] = dist > bw ? 0 : (1 - (dist * dist) / (bw * bw))*(1 - (dist * dist) / (bw * bw));
 }
 
-__global__ void gw_weight_tricube_kernel(const double *d_dists, double bw, double *d_weights, int n, bool adaptive)
+__global__ void gw_weight_tricube_kernel(const double *d_dists, double bw, double *d_weights, int n)
 {
 	int index = blockIdx.x * blockDim.x + threadIdx.x;
 	if (index >= n) return;
 	int i = index;
 	double dist = d_dists[i];
-	double fixbw = adaptive ? d_dists[(int)bw - 1] : bw;
-	d_weights[i] = dist > fixbw ? 0 :
-		(1 - (dist * dist * dist) / (fixbw * fixbw * fixbw))*
-		(1 - (dist * dist * dist) / (fixbw * fixbw * fixbw))*
-		(1 - (dist * dist * dist) / (fixbw * fixbw * fixbw));
+	d_weights[i] = dist > bw ? 0 :
+		(1 - (dist * dist * dist) / (bw * bw * bw))*
+		(1 - (dist * dist * dist) / (bw * bw * bw))*
+		(1 - (dist * dist * dist) / (bw * bw * bw));
 }
 
-__global__ void gw_weight_boxcar_kernel(const double *d_dists, double bw, double *d_weights, int n, bool adaptive)
+__global__ void gw_weight_boxcar_kernel(const double *d_dists, double bw, double *d_weights, int n)
 {
 	int index = blockIdx.x * blockDim.x + threadIdx.x;
 	if (index >= n) return;
 	int i = index;
 	double dist = d_dists[i];
-	double fixbw = adaptive ? d_dists[(int)bw - 1] : bw;
-	d_weights[i] = dist > fixbw ? 0 : 1;
+	d_weights[i] = dist > bw ? 0 : 1;
 }
 
-typedef void(*WEIGHT_KERNEL_CUDA)(const double*, double, double*, int, bool);
+typedef void(*WEIGHT_KERNEL_CUDA)(const double*, double, double*, int);
 
 const WEIGHT_KERNEL_CUDA GWRKernelCuda[5] = {
   gw_weight_gaussian_kernel,
@@ -336,9 +331,19 @@ cudaError_t gw_weight_cuda(double bw, int kernel, bool adaptive, double *d_dists
 			dim3 blockSize(threads), gridSize((ndp + blockSize.x - 1) / blockSize.x);
 			for (size_t f = 0; f < nrp; f++)
 			{
-				thrust::device_ptr<double> v_dists(d_dists);
-				thrust::sort(v_dists + f * ndp, v_dists + f * ndp + ndp);
-				(*kerf) << <gridSize, blockSize >> > (d_dists + f * ndp, bw < ndp ? bw : ndp, d_weight + f * ndp, ndp, true);
+				// Backup d_dists, used for sort
+				double *d_dists_bak;
+				cudaMalloc((void **)&d_dists_bak, sizeof(double) * ndp);
+				cudaMemcpy(d_dists_bak, d_dists + f * ndp, sizeof(double) * ndp, cudaMemcpyDeviceToDevice);
+				thrust::device_ptr<double> v_dists(d_dists_bak);
+				thrust::sort(v_dists, v_dists + ndp);
+				// Calculate weight for each distance
+				double bw_dist = v_dists[(int)(bw < ndp ? bw : ndp) - 1];
+				(*kerf) << <gridSize, blockSize >> > (d_dists + f * ndp, bw_dist, d_weight + f * ndp, ndp);
+				// Free d_dists_bak
+				cudaFree(d_dists_bak);
+				d_dists_bak = nullptr;
+				// Get error
 				error = cudaGetLastError();
 				if (error != cudaSuccess)
 				{
@@ -350,7 +355,7 @@ cudaError_t gw_weight_cuda(double bw, int kernel, bool adaptive, double *d_dists
 		default:
 		{
 			dim3 blockSize(threads), gridSize((ndp * nrp + blockSize.x - 1) / blockSize.x);
-			(*kerf) << <gridSize, blockSize >> > (d_dists, bw, d_weight, ndp * nrp, false);
+			(*kerf) << <gridSize, blockSize >> > (d_dists, bw, d_weight, ndp * nrp);
 			error = cudaGetLastError();
 			if (error != cudaSuccess)
 			{
