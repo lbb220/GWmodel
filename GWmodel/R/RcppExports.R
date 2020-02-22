@@ -103,38 +103,124 @@ rss <- function(y, X, beta) {
 }
 
 gwr_diag <- function(y,x, beta, S) {
-    .Call('GWmodel_gwr_diag', PACKAGE = 'GWmodel', y,x, beta, S)
+    .Call('GWmodel_gwr_diag', PACKAGE = 'GWmodel', y, x, beta, S)
+}
+
+gwr_diag1 <- function(y,x, beta, s_hat) {
+  .Call('GWmodel_gwr_diag1', PACKAGE = 'GWmodel', y, x, beta, s_hat)
 }
 
 AICc <- function(y,x, beta, S) {
     .Call('GWmodel_AICc', PACKAGE = 'GWmodel', y,x, beta, S)
 }
 
+AICc1 <- function(y,x, beta, s_hat) {
+  .Call('GWmodel_AICc1', PACKAGE = 'GWmodel', y,x, beta, s_hat)
+}
+
 AICc_rss <- function(y,x, beta, S) {
     .Call('GWmodel_AICc_rss', PACKAGE = 'GWmodel', y,x, beta, S)
+}
+
+AICc_rss1 <- function(y,x, beta, s_hat) {
+  .Call('GWmodel_AICc_rss1', PACKAGE = 'GWmodel', y,x, beta, s_hat)
 }
 
 Ci_mat <- function(x, w) {
     .Call('GWmodel_Ci_mat', PACKAGE = 'GWmodel', x, w)
 }
 
-AICc1 <- function(y,x, beta, s_hat) {
-    .Call('GWmodel_AICc1', PACKAGE = 'GWmodel', y,x, beta, s_hat)
-}
-
-gwr_diag1 <- function(y,x, beta, S) {
-    .Call('GWmodel_gwr_diag1', PACKAGE = 'GWmodel', y,x, beta, S)
+#scgwr_pre(mat x, vec y, int bw, int poly, double b0, mat g0, mat neighbour)
+scgwr_pre <- function(x, y, bw, poly, b0, g0, neighbour) {
+    .Call('GWmodel_scgwr_pre', PACKAGE = 'GWmodel', x, y, bw, poly, b0, g0, neighbour)
 }
 
 #scgwr_reg(mat x, vec y, int bw, int poly, mat G0, mat Mx0, mat My0, mat XtX, mat XtY, mat neighbour, vec parameters);
-scgwr_reg <- function( x, y, bw, poly, G0, Mx0, My0, XtX, XtY, neighbour, parameters) {
+scgwr_reg <- function(x, y, bw, poly, G0, Mx0, My0, XtX, XtY, neighbour, parameters) {
     .Call('GWmodel_scgwr_reg', PACKAGE = 'GWmodel', x, y, bw, poly, G0, Mx0, My0, XtX, XtY, neighbour, parameters)
 }
+
 #scgwr_loocv(vec target, mat x, vec y, int bw, int poly, mat Mx0, mat My0, mat XtX, mat XtY)
 scgwr_loocv <- function(target, x, y, bw, poly, Mx0, My0, XtX, XtY) {
     .Call('GWmodel_scgwr_loocv', PACKAGE = 'GWmodel', target, x, y, bw, poly, Mx0, My0, XtX, XtY)
 }
-#scgwr_pre(mat x, vec y, int bw, int poly, double b0, mat g0, mat neighbour)
-scgwr_pre <- function(x, y, bw, poly, b0, g0, neighbour) {
-    .Call('GWmodel_scgwr_pre', PACKAGE = 'GWmodel', x, y, bw, poly, b0, g0, neighbour)
+
+gw_dist <- function(dp.locat, rp.locat, focus, p, theta, longlat, rp.given) {
+  .Call('GWmodel_gw_dist', PACKAGE = 'GWmodel', dp.locat, rp.locat, focus, p, theta, longlat, rp.given)
+}
+
+gw_reg_all <- function(x, y, dp.locat, rp.given, rp.locat, dm.given, dmat, hatmatrix, p, theta, longlat, bw, kernel, adaptive, ngroup = 1, igroup = 1) {
+  kernel.id <- switch (kernel,
+                       gaussian = 0,
+                       exponential = 1,
+                       bisquare = 2,
+                       tricube  = 3,
+                       boxcar   = 4)
+  .Call('GWmodel_gw_reg_all', PACKAGE = 'GWmodel', 
+        x, y, dp.locat, rp.given, rp.locat, dm.given, dmat, hatmatrix, p, theta, longlat, bw, kernel.id, adaptive, ngroup, igroup - 1)
+}
+
+gw_reg_all_omp <- function(x, y, dp.locat, rp.given, rp.locat, dm.given, dmat, hatmatrix, p, theta, longlat, bw, kernel, adaptive, threads = 0, ngroup = 1, igroup = 1) {
+  kernel.id <- switch (kernel,
+                       gaussian = 0,
+                       exponential = 1,
+                       bisquare = 2,
+                       tricube  = 3,
+                       boxcar   = 4)
+  .Call('GWmodel_gw_reg_all_omp', PACKAGE = 'GWmodel', 
+        x, y, dp.locat, rp.given, rp.locat, dm.given, dmat, hatmatrix, p, theta, longlat, bw, kernel.id, adaptive, threads, ngroup, igroup - 1)
+}
+
+gw_reg_all_cuda <- function(x, y, dp.locat, rp.given, rp.locat, dm.given, dmat, hatmatrix, p, theta, longlat, bw, kernel, adaptive, groupl = 0, gpuID = 1) {
+  kernel.id <- switch (kernel,
+                       gaussian = 0,
+                       exponential = 1,
+                       bisquare = 2,
+                       tricube  = 3,
+                       boxcar   = 4)
+  .Call('GWmodel_gw_reg_cuda', PACKAGE = 'GWmodel', 
+        x, y, dp.locat, rp.given, rp.locat, dm.given, dmat, hatmatrix, p, theta, longlat, bw, kernel.id, adaptive, groupl, gpuID - 1)
+}
+
+gw_cv_all <- function(x, y, dp.locat, dm.given, dmat, p, theta, longlat, bw, kernel, adaptive, ngroup = 1, igroup = 1) {
+  kernel.id <- switch (kernel,
+                       gaussian = 0,
+                       exponential = 1,
+                       bisquare = 2,
+                       tricube  = 3,
+                       boxcar   = 4)
+  .Call('GWmodel_gw_cv_all', PACKAGE = 'GWmodel', 
+        x, y, dp.locat, dm.given, dmat, p, theta, longlat, bw, kernel.id, adaptive, ngroup, igroup - 1)
+}
+
+gw_cv_all_omp <- function(x, y, dp.locat, dm.given, dmat, p, theta, longlat, bw, kernel, adaptive, threads = 0, ngroup = 1, igroup = 1) {
+  kernel.id <- switch (kernel,
+                       gaussian = 0,
+                       exponential = 1,
+                       bisquare = 2,
+                       tricube  = 3,
+                       boxcar   = 4)
+  .Call('GWmodel_gw_cv_all_omp', PACKAGE = 'GWmodel', 
+        x, y, dp.locat, dm.given, dmat, p, theta, longlat, bw, kernel.id, adaptive, threads, ngroup, igroup - 1)
+}
+
+gw_cv_all_cuda <- function(x, y, dp.locat, dm.given, dmat, p, theta, longlat, bw, kernel, adaptive, groupl = 0, gpuID = 1) {
+  kernel.id <- switch (kernel,
+                       gaussian = 0,
+                       exponential = 1,
+                       bisquare = 2,
+                       tricube  = 3,
+                       boxcar   = 4)
+  .Call('GWmodel_gw_cv_all_cuda', PACKAGE = 'GWmodel', 
+        x, y, dp.locat, dm.given, dmat, p, theta, longlat, bw, kernel.id, adaptive, groupl, gpuID - 1)
+}
+
+gw_local_r2 <- function(dp, dybar2, dyhat2, dm_given, dmat, p, theta, longlat, bw, kernel, adaptive) {
+  kernel.id <- switch (kernel,
+                       gaussian = 0,
+                       exponential = 1,
+                       bisquare = 2,
+                       tricube  = 3,
+                       boxcar   = 4)
+  .Call('GWmodel_gw_local_r2', PACKAGE = 'GWmodel', dp, dybar2, dyhat2, dm_given, dmat, p, theta, longlat, bw, kernel.id, adaptive)
 }

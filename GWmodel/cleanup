@@ -1,0 +1,9 @@
+#!/bin/sh +x
+
+rm -rf src/*.o src/*.so
+
+rm -rf config.log config.status autom4te.cache
+
+rm -rf src/tmp src/GWmodelCUDA.zip
+
+rm -rf src/GWmodelCUDA*.dll src/GWmodelCUDA/*.lib

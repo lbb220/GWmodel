@@ -1,0 +1,4 @@
+/src-*
+/src/*.o
+/src/*.dll
+/src/GWmodelCUDA/*.lib
