@@ -1,2 +1,26 @@
+PKG_CXXFLAGS = -ARMA_64BIT_WORD=1 $(SHLIB_OPENMP_CXXFLAGS)
+PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) $(SHLIB_OPENMP_CXXFLAGS)
 
-PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
+ifdef CUDA_PATH
+ifeq "$(WIN)" "64"
+PKG_CXXFLAGS += -DCUDA_ACCE -I"./GWmodelCUDA"
+PKG_LIBS += -L"./GWmodelCUDA" -lGWmodelCUDA64
+CUDA_LIB = GWmodelCUDA64.dll GWmodelCUDA64.lib
+endif
+endif
+
+
+
+vpath %.lib ./GWmodelCUDA
+
+.PHONY: all 
+
+all: GWmodel.dll
+
+GWmodel.dll: ${CUDA_LIB}
+
+${CUDA_LIB}:
+	sh -c 'powershell.exe -Command -' < download.ps1
+	unzip -d tmp -o GWmodelCUDA.zip
+	mv tmp/*.dll .
+	mv tmp/*.lib GWmodelCUDA

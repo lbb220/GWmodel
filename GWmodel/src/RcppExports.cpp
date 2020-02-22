@@ -4,6 +4,10 @@
 #include <RcppArmadillo.h>
 #include <Rcpp.h>
 
+#ifdef CUDA_ACCE
+#include <IGWmodelCUDA.h>
+#endif
+
 using namespace Rcpp;
 using namespace arma;
 
@@ -411,6 +415,21 @@ BEGIN_RCPP
 END_RCPP
 }
 
+//GWmodel_AICc_rss1
+arma::vec AICc_rss1(arma::vec y,arma::mat x, arma::mat beta, arma::vec s_hat);
+RcppExport SEXP GWmodel_AICc_rss1(SEXP ySEXP, SEXP xSEXP, SEXP betaSEXP, SEXP s_hatSEXP) {
+  BEGIN_RCPP
+  Rcpp::RObject __result;
+  Rcpp::RNGScope __rngScope;
+  Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type beta(betaSEXP);
+  Rcpp::traits::input_parameter< arma::vec >::type s_hat(s_hatSEXP);
+  __result = Rcpp::wrap(AICc_rss1(y, x, beta, s_hat));
+  return __result;
+  END_RCPP
+}
+
 //GWmodel_Ci_mat
 arma::mat Ci_mat(arma::mat x, arma::vec w);
 RcppExport SEXP GWmodel_Ci_mat(SEXP xSEXP, SEXP wSEXP) {
@@ -482,6 +501,356 @@ RcppExport SEXP GWmodel_scgwr_reg(SEXP xSEXP, SEXP ySEXP, SEXP bwSEXP, SEXP poly
   Rcpp::traits::input_parameter< arma::mat >::type neighbour(neighbourSEXP);
   Rcpp::traits::input_parameter< arma::vec >::type parameters(parametersSEXP);
   __result = Rcpp::wrap(scgwr_reg(x, y, bw, poly, G0, Mx0, My0, XtX, XtY, neighbour, parameters));
+  return __result;
+  END_RCPP
+}
+
+//GWmodel_gw_dist
+arma::mat gw_dist(mat dp, mat rp, int focus, double p, double theta, bool longlat, bool rp_given);
+RcppExport SEXP GWmodel_gw_dist(SEXP dpSEXP, SEXP rpSEXP, SEXP focusSEXP, SEXP pSEXP, SEXP thetaSEXP, SEXP longlatSEXP, SEXP rp_givenSEXP) {
+  BEGIN_RCPP
+  Rcpp::RObject __result;
+  Rcpp::RNGScope __rngScope;
+  Rcpp::traits::input_parameter< arma::mat >::type dp(dpSEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type rp(rpSEXP);
+  Rcpp::traits::input_parameter< int >::type focus(focusSEXP);
+  Rcpp::traits::input_parameter< double >::type p(pSEXP);
+  Rcpp::traits::input_parameter< double >::type theta(thetaSEXP);
+  Rcpp::traits::input_parameter< bool >::type longlat(longlatSEXP);
+  Rcpp::traits::input_parameter< bool >::type rp_given(rp_givenSEXP);
+  __result = Rcpp::wrap(gw_dist(dp, rp, focus, p, theta, longlat, rp_given));
+  return __result;
+  END_RCPP
+}
+
+//GWmodel_gw_reg_all
+Rcpp::List gw_reg_all(mat x, vec y, mat dp, bool rp_given, mat rp, bool dm_given, mat dmat, bool hatmatrix, 
+                      double p, double theta, bool longlat, 
+                      double bw, int kernel, bool adaptive,
+                      int ngroup, int igroup);
+RcppExport SEXP GWmodel_gw_reg_all(SEXP xSEXP, SEXP ySEXP, SEXP dpSEXP, SEXP rp_givenSEXP, SEXP rpSEXP, SEXP dm_givenSEXP, SEXP dmatSEXP, SEXP hatmatrixSEXP, 
+                                   SEXP pSEXP, SEXP thetaSEXP, SEXP longlatSEXP, SEXP bwSEXP, SEXP kernelSEXP, SEXP adaptiveSEXP,
+                                   SEXP ngroupSEXP, SEXP igroupSEXP) {
+  BEGIN_RCPP
+  Rcpp::RObject __result;
+  Rcpp::RNGScope __rngScope;
+  Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+  Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type dp(dpSEXP);
+  Rcpp::traits::input_parameter< bool >::type rp_given(rp_givenSEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type rp(rpSEXP);
+  Rcpp::traits::input_parameter< bool >::type dm_given(dm_givenSEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type dmat(dmatSEXP);
+  Rcpp::traits::input_parameter< bool >::type hatmatrix(hatmatrixSEXP);
+  Rcpp::traits::input_parameter< double >::type p(pSEXP);
+  Rcpp::traits::input_parameter< double >::type theta(thetaSEXP);
+  Rcpp::traits::input_parameter< bool >::type longlat(longlatSEXP);
+  Rcpp::traits::input_parameter< double >::type bw(bwSEXP);
+  Rcpp::traits::input_parameter< double >::type kernel(kernelSEXP);
+  Rcpp::traits::input_parameter< bool >::type adaptive(adaptiveSEXP);
+  Rcpp::traits::input_parameter< int >::type ngroup(ngroupSEXP);
+  Rcpp::traits::input_parameter< int >::type igroup(igroupSEXP);
+  __result = Rcpp::wrap(gw_reg_all(x, y, dp, rp_given, rp, dm_given, dmat, hatmatrix, p, theta, longlat, bw, kernel, adaptive, ngroup, igroup));
+  return __result;
+  END_RCPP
+}
+
+#ifdef CUDA_ACCE
+RcppExport SEXP GWmodel_gw_reg_cuda(SEXP xSEXP, SEXP ySEXP, SEXP dpSEXP, SEXP rp_givenSEXP, SEXP rpSEXP, SEXP dm_givenSEXP, SEXP dmatSEXP, SEXP hatmatrixSEXP, 
+                                   SEXP pSEXP, SEXP thetaSEXP, SEXP longlatSEXP, SEXP bwSEXP, SEXP kernelSEXP, SEXP adaptiveSEXP,
+                                   SEXP ngroupSEXP, SEXP gpuIDSEXP) {
+  BEGIN_RCPP
+  Rcpp::RObject __result;
+  Rcpp::RNGScope __rngScope;
+  Rcpp::traits::input_parameter< arma::mat >::type xT(xSEXP);
+  Rcpp::traits::input_parameter< arma::vec >::type yT(ySEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type dpT(dpSEXP);
+  Rcpp::traits::input_parameter< bool >::type rp_given(rp_givenSEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type rpT(rpSEXP);
+  Rcpp::traits::input_parameter< bool >::type dm_given(dm_givenSEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type dMatT(dmatSEXP);
+  Rcpp::traits::input_parameter< bool >::type hatmatrix(hatmatrixSEXP);
+  Rcpp::traits::input_parameter< double >::type p(pSEXP);
+  Rcpp::traits::input_parameter< double >::type theta(thetaSEXP);
+  Rcpp::traits::input_parameter< bool >::type longlat(longlatSEXP);
+  Rcpp::traits::input_parameter< double >::type bw(bwSEXP);
+  Rcpp::traits::input_parameter< double >::type kernel(kernelSEXP);
+  Rcpp::traits::input_parameter< bool >::type adaptive(adaptiveSEXP);
+  Rcpp::traits::input_parameter< int >::type ngroup(ngroupSEXP);
+  Rcpp::traits::input_parameter< int >::type gpuID(gpuIDSEXP);
+  
+  mat x = mat(xT);
+  mat y = mat(yT);
+  mat dp = mat(dpT);
+  mat rp = mat(rpT);
+  mat dMat = mat(dMatT);
+  int N = x.n_rows;
+  int K = x.n_cols;
+  int n = rp.n_rows;
+  IGWmodelCUDA* cuda = GWCUDA_Create(N, K, rp_given, n, dm_given);
+  for (int r = 0; r < N; r++) {
+    for (int c = 0; c < K; c++) {
+      cuda->SetX(c, r, x(r, c));
+    }
+    cuda->SetY(r, y(r));
+    cuda->SetDp(r, dp(r, 0), dp(r, 1));
+  }
+  if (rp_given) {
+    for (int r = 0; r < N; r++) {
+      cuda->SetRp(r, rp(r, 0), rp(r, 1));
+    }
+  }
+  if (dm_given) {
+    for (int d = 0; d < N; d++) {
+      for (int r = 0; r < n; r++) {
+        cuda->SetDmat(d, r, dMat(d, r));
+      }
+    }
+  }
+  try {
+    bool gwr_status = cuda->Regression(hatmatrix, p, theta, longlat, bw, kernel, adaptive, ngroup, gpuID);
+    if (gwr_status) {
+      mat betas(N, K, fill::zeros);
+      if (hatmatrix) {
+        mat betasSE(N, K, fill::zeros);
+        vec s_hat(2, fill::zeros);
+        vec qdiag(N, fill::zeros);
+        for (int r = 0; r < N; r++) {
+          for (int c = 0; c < K; c++) {
+            betas(r, c) = cuda->GetBetas(r, c);
+            betasSE(r, c) = cuda->GetBetasSE(r, c);
+          }
+          qdiag(r) = cuda->GetQdiag(r);
+        }
+        s_hat(0) = cuda->GetShat1();
+        s_hat(1) = cuda->GetShat2();
+        __result = Rcpp::wrap(Rcpp::List::create(
+          Named("betas") = betas,
+          Named("betas.SE") = betasSE,
+          Named("s_hat") = s_hat,
+          Named("q.diag") = qdiag
+        ));
+      } else {
+        for (int r = 0; r < N; r++) {
+          for (int c = 0; c < K; c++) {
+            betas(r, c) = cuda->GetBetas(r, c);
+          }
+        }
+        __result = Rcpp::wrap(Rcpp::List::create(
+          Named("betas") = betas
+        ));
+      }
+    } else {
+      __result = Rcpp::wrap(false);
+    }
+    GWCUDA_Del(cuda);
+  } catch (std::exception &ex) {
+    throw ex;
+  }
+  return __result;
+  END_RCPP
+}
+#else
+RcppExport SEXP GWmodel_gw_reg_cuda(SEXP xSEXP, SEXP ySEXP, SEXP dpSEXP, SEXP rp_givenSEXP, SEXP rpSEXP, SEXP dm_givenSEXP, SEXP dmatSEXP, SEXP hatmatrixSEXP, 
+                                   SEXP pSEXP, SEXP thetaSEXP, SEXP longlatSEXP, SEXP bwSEXP, SEXP kernelSEXP, SEXP adaptiveSEXP,
+                                   SEXP ngroupSEXP, SEXP gpuIDSEXP) {
+  BEGIN_RCPP
+  throw exception("Method NOT implemented");
+  END_RCPP
+}
+#endif
+
+//GWmodel_gw_reg_all_omp
+Rcpp::List gw_reg_all_omp(mat x, vec y, mat dp, bool rp_given, mat rp, bool dm_given, mat dmat, bool hatmatrix, 
+                          double p, double theta, bool longlat, 
+                          double bw, int kernel, bool adaptive,
+                          int threads, int ngroup, int igroup);
+RcppExport SEXP GWmodel_gw_reg_all_omp(SEXP xSEXP, SEXP ySEXP, SEXP dpSEXP, SEXP rp_givenSEXP, SEXP rpSEXP, SEXP dm_givenSEXP, SEXP dmatSEXP, SEXP hatmatrixSEXP, 
+                                       SEXP pSEXP, SEXP thetaSEXP, SEXP longlatSEXP, SEXP bwSEXP, SEXP kernelSEXP, SEXP adaptiveSEXP,
+                                       SEXP threadsSEXP, SEXP ngroupSEXP, SEXP igroupSEXP) {
+  BEGIN_RCPP
+  Rcpp::RObject __result;
+  Rcpp::RNGScope __rngScope;
+  Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+  Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type dp(dpSEXP);
+  Rcpp::traits::input_parameter< bool >::type rp_given(rp_givenSEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type rp(rpSEXP);
+  Rcpp::traits::input_parameter< bool >::type dm_given(dm_givenSEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type dmat(dmatSEXP);
+  Rcpp::traits::input_parameter< bool >::type hatmatrix(hatmatrixSEXP);
+  Rcpp::traits::input_parameter< double >::type p(pSEXP);
+  Rcpp::traits::input_parameter< double >::type theta(thetaSEXP);
+  Rcpp::traits::input_parameter< bool >::type longlat(longlatSEXP);
+  Rcpp::traits::input_parameter< double >::type bw(bwSEXP);
+  Rcpp::traits::input_parameter< double >::type kernel(kernelSEXP);
+  Rcpp::traits::input_parameter< bool >::type adaptive(adaptiveSEXP);
+  Rcpp::traits::input_parameter< int >::type threads(threadsSEXP);
+  Rcpp::traits::input_parameter< int >::type ngroup(ngroupSEXP);
+  Rcpp::traits::input_parameter< int >::type igroup(igroupSEXP);
+  __result = Rcpp::wrap(gw_reg_all_omp(x, y, dp, rp_given, rp, dm_given, dmat, hatmatrix, p, theta, longlat, bw, kernel, adaptive, threads, ngroup, igroup));
+  return __result;
+  END_RCPP
+}
+
+//GWmodel_gw_cv_all
+double gw_cv_all(mat x, vec y, mat dp, bool dm_given, mat dmat, 
+                 double p, double theta, bool longlat, 
+                 double bw, int kernel, bool adaptive,
+                 int ngroup, int igroup);
+RcppExport SEXP GWmodel_gw_cv_all(SEXP xSEXP, SEXP ySEXP, SEXP dpSEXP, SEXP dm_givenSEXP, SEXP dmatSEXP, 
+                                  SEXP pSEXP, SEXP thetaSEXP, SEXP longlatSEXP, SEXP bwSEXP, SEXP kernelSEXP, SEXP adaptiveSEXP,
+                                  SEXP ngroupSEXP, SEXP igroupSEXP) {
+  BEGIN_RCPP
+  Rcpp::RObject __result;
+  Rcpp::RNGScope __rngScope;
+  Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+  Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type dp(dpSEXP);
+  Rcpp::traits::input_parameter< bool >::type dm_given(dm_givenSEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type dmat(dmatSEXP);
+  Rcpp::traits::input_parameter< double >::type p(pSEXP);
+  Rcpp::traits::input_parameter< double >::type theta(thetaSEXP);
+  Rcpp::traits::input_parameter< bool >::type longlat(longlatSEXP);
+  Rcpp::traits::input_parameter< double >::type bw(bwSEXP);
+  Rcpp::traits::input_parameter< double >::type kernel(kernelSEXP);
+  Rcpp::traits::input_parameter< bool >::type adaptive(adaptiveSEXP);
+  Rcpp::traits::input_parameter< int >::type ngroup(ngroupSEXP);
+  Rcpp::traits::input_parameter< int >::type igroup(igroupSEXP);
+  try {
+    __result = Rcpp::wrap(gw_cv_all(x, y, dp, dm_given, dmat, p, theta, longlat, bw, kernel, adaptive, ngroup, igroup));
+  } catch (std::runtime_error &ex) {
+    __result = Rcpp::wrap(R_PosInf);
+  } catch (std::exception &ex) {
+    throw ex;
+  }
+  return __result;
+  END_RCPP
+}
+
+//GWmodel_gw_cv_all
+double gw_cv_all_omp(mat x, vec y, mat dp, bool dm_given, mat dmat, 
+                     double p, double theta, bool longlat, 
+                     double bw, int kernel, bool adaptive,
+                     int threads, int ngroup, int igroup);
+RcppExport SEXP GWmodel_gw_cv_all_omp(SEXP xSEXP, SEXP ySEXP, SEXP dpSEXP, SEXP dm_givenSEXP, SEXP dmatSEXP, 
+                                      SEXP pSEXP, SEXP thetaSEXP, SEXP longlatSEXP, SEXP bwSEXP, SEXP kernelSEXP, SEXP adaptiveSEXP,
+                                      SEXP threadsSEXP, SEXP ngroupSEXP, SEXP igroupSEXP) {
+  BEGIN_RCPP
+  Rcpp::RObject __result;
+  Rcpp::RNGScope __rngScope;
+  Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+  Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type dp(dpSEXP);
+  Rcpp::traits::input_parameter< bool >::type dm_given(dm_givenSEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type dmat(dmatSEXP);
+  Rcpp::traits::input_parameter< double >::type p(pSEXP);
+  Rcpp::traits::input_parameter< double >::type theta(thetaSEXP);
+  Rcpp::traits::input_parameter< bool >::type longlat(longlatSEXP);
+  Rcpp::traits::input_parameter< double >::type bw(bwSEXP);
+  Rcpp::traits::input_parameter< double >::type kernel(kernelSEXP);
+  Rcpp::traits::input_parameter< bool >::type adaptive(adaptiveSEXP);
+  Rcpp::traits::input_parameter< int >::type threads(threadsSEXP);
+  Rcpp::traits::input_parameter< int >::type ngroup(ngroupSEXP);
+  Rcpp::traits::input_parameter< int >::type igroup(igroupSEXP);
+  try {
+    __result = Rcpp::wrap(gw_cv_all_omp(x, y, dp, dm_given, dmat, p, theta, longlat, bw, kernel, adaptive, threads, ngroup, igroup));
+  } catch (std::runtime_error &ex) {
+    __result = Rcpp::wrap(R_PosInf);
+  } catch (std::exception &ex) {
+    throw ex;
+  }
+  return __result;
+  END_RCPP
+}
+
+#ifdef CUDA_ACCE
+RcppExport SEXP GWmodel_gw_cv_all_cuda(SEXP xSEXP, SEXP ySEXP, SEXP dpSEXP, SEXP dm_givenSEXP, SEXP dmatSEXP, 
+                                   SEXP pSEXP, SEXP thetaSEXP, SEXP longlatSEXP, SEXP bwSEXP, SEXP kernelSEXP, SEXP adaptiveSEXP,
+                                   SEXP ngroupSEXP, SEXP gpuIDSEXP) {
+  BEGIN_RCPP
+  Rcpp::RObject __result;
+  Rcpp::RNGScope __rngScope;
+  Rcpp::traits::input_parameter< arma::mat >::type xT(xSEXP);
+  Rcpp::traits::input_parameter< arma::vec >::type yT(ySEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type dpT(dpSEXP);
+  Rcpp::traits::input_parameter< bool >::type dm_given(dm_givenSEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type dMatT(dmatSEXP);
+  Rcpp::traits::input_parameter< double >::type p(pSEXP);
+  Rcpp::traits::input_parameter< double >::type theta(thetaSEXP);
+  Rcpp::traits::input_parameter< bool >::type longlat(longlatSEXP);
+  Rcpp::traits::input_parameter< double >::type bw(bwSEXP);
+  Rcpp::traits::input_parameter< double >::type kernel(kernelSEXP);
+  Rcpp::traits::input_parameter< bool >::type adaptive(adaptiveSEXP);
+  Rcpp::traits::input_parameter< int >::type ngroup(ngroupSEXP);
+  Rcpp::traits::input_parameter< int >::type gpuID(gpuIDSEXP);
+  
+  mat x = mat(xT);
+  mat y = mat(yT);
+  mat dp = mat(dpT);
+  mat dMat = mat(dMatT);
+  int N = x.n_rows;
+  int K = x.n_cols;
+  int n = dp.n_rows;
+  try {
+    IGWmodelCUDA* cuda = GWCUDA_Create(N, K, false, n, dm_given);
+    for (int r = 0; r < N; r++) {
+      for (int c = 0; c < K; c++) {
+        cuda->SetX(c, r, x(r, c));
+      }
+      cuda->SetY(r, y(r));
+      cuda->SetDp(r, dp(r, 0), dp(r, 1));
+    }
+    if (dm_given) {
+      for (int d = 0; d < N; d++) {
+        for (int r = 0; r < n; r++) {
+          cuda->SetDmat(d, r, dMat(d, r));
+        }
+      }
+    }
+    double cv = cuda->CV(p, theta, longlat, bw, kernel, adaptive, ngroup, gpuID);
+    if (cv < DBL_MAX) {
+      __result = Rcpp::wrap(cv);
+    } else {
+      __result = Rcpp::wrap(R_PosInf);
+    }
+    GWCUDA_Del(cuda);
+  } catch (std::exception &ex) {
+    throw ex;
+  }
+  return __result;
+  END_RCPP
+}
+#else
+RcppExport SEXP GWmodel_gw_cv_all_cuda(SEXP xSEXP, SEXP ySEXP, SEXP dpSEXP, SEXP dm_givenSEXP, SEXP dmatSEXP, 
+                                   SEXP pSEXP, SEXP thetaSEXP, SEXP longlatSEXP, SEXP bwSEXP, SEXP kernelSEXP, SEXP adaptiveSEXP,
+                                   SEXP ngroupSEXP, SEXP gpuIDSEXP) {
+  BEGIN_RCPP
+  throw exception("Method NOT implemented");
+  END_RCPP
+}
+#endif
+
+
+//GWmodel_gw_local_r2
+arma::vec gw_local_r2(mat dp, vec dybar2, vec dyhat2, bool dm_given, mat dmat, double p, double theta, bool longlat, double bw, int kernel, bool adaptive);
+RcppExport SEXP GWmodel_gw_local_r2(SEXP dpSEXP, SEXP dybar2SEXP, SEXP dyhat2SEXP, SEXP dm_givenSEXP, SEXP dmatSEXP,
+                                    SEXP pSEXP, SEXP thetaSEXP, SEXP longlatSEXP, SEXP bwSEXP, SEXP kernelSEXP, SEXP adaptiveSEXP) {
+  BEGIN_RCPP
+  Rcpp::RObject __result;
+  Rcpp::RNGScope __rngScope;
+  Rcpp::traits::input_parameter< arma::mat >::type dp(dpSEXP);
+  Rcpp::traits::input_parameter< arma::vec >::type dybar2(dybar2SEXP);
+  Rcpp::traits::input_parameter< arma::vec >::type dyhat2(dyhat2SEXP);
+  Rcpp::traits::input_parameter< bool >::type dm_given(dm_givenSEXP);
+  Rcpp::traits::input_parameter< arma::mat >::type dmat(dmatSEXP);
+  Rcpp::traits::input_parameter< double >::type p(pSEXP);
+  Rcpp::traits::input_parameter< double >::type theta(thetaSEXP);
+  Rcpp::traits::input_parameter< bool >::type longlat(longlatSEXP);
+  Rcpp::traits::input_parameter< double >::type bw(bwSEXP);
+  Rcpp::traits::input_parameter< double >::type kernel(kernelSEXP);
+  Rcpp::traits::input_parameter< bool >::type adaptive(adaptiveSEXP);
+  __result = Rcpp::wrap(gw_local_r2(dp, dybar2, dyhat2, dm_given, dmat, p, theta, longlat, bw, kernel, adaptive));
   return __result;
   END_RCPP
 }
