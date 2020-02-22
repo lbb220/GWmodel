@@ -160,9 +160,9 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
     }
   } else if (parallel.method == "cuda") {
     if (missing(parallel.arg)) {
-      groupl <- 0
+      groupl <- 16
     } else {
-      groupl <- ifelse(is(parallel.arg, "numeric"), parallel.arg, 0)
+      groupl <- ifelse(is(parallel.arg, "numeric"), parallel.arg, 16)
     }
     reg.result <- gw_reg_all_cuda(x, y, dp.locat, rp.given, rp.locat, DM.given, dMat, hatmatrix, p, theta, longlat, bw, kernel, adaptive, groupl)
     if (is(reg.result, "logical") && reg.result == FALSE) {
