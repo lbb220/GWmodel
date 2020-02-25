@@ -324,37 +324,32 @@ cudaError_t gw_weight_cuda(double bw, int kernel, bool adaptive, double *d_dists
 {
 	cudaError_t error;
 	const WEIGHT_KERNEL_CUDA *kerf = GWRKernelCuda + kernel;
+	dim3 blockSize(threads), gridSize((ndp + blockSize.x - 1) / blockSize.x);
 	switch (adaptive)
 	{
 		case true:
 		{
-			dim3 blockSize(threads), gridSize((ndp + blockSize.x - 1) / blockSize.x);
+			double* dd_dists;
+			cudaMalloc(&dd_dists, ndp * nrp * sizeof(double));
+			cudaMemcpy(dd_dists, d_dists, ndp * nrp * sizeof(double), cudaMemcpyDeviceToDevice);
+			thrust::device_ptr<double> v_dists(dd_dists);
 			for (size_t f = 0; f < nrp; f++)
 			{
-				// Backup d_dists, used for sort
-				double *d_dists_bak;
-				cudaMalloc((void **)&d_dists_bak, sizeof(double) * ndp);
-				cudaMemcpy(d_dists_bak, d_dists + f * ndp, sizeof(double) * ndp, cudaMemcpyDeviceToDevice);
-				thrust::device_ptr<double> v_dists(d_dists_bak);
-				thrust::sort(v_dists, v_dists + ndp);
-				// Calculate weight for each distance
-				double bw_dist = v_dists[(int)(bw < ndp ? bw : ndp) - 1];
+				thrust::sort(v_dists + f * ndp, v_dists + f * ndp + ndp);
+				double bw_dist = v_dists[f * ndp + ((int)(bw < ndp ? bw : ndp)) - 1];
 				(*kerf) << <gridSize, blockSize >> > (d_dists + f * ndp, bw_dist, d_weight + f * ndp, ndp);
-				// Free d_dists_bak
-				cudaFree(d_dists_bak);
-				d_dists_bak = nullptr;
-				// Get error
 				error = cudaGetLastError();
 				if (error != cudaSuccess)
 				{
 					return error;
 				}
 			}
+			cudaFree(dd_dists);
+			dd_dists = nullptr;
 			break;
 		}
 		default:
 		{
-			dim3 blockSize(threads), gridSize((ndp * nrp + blockSize.x - 1) / blockSize.x);
 			(*kerf) << <gridSize, blockSize >> > (d_dists, bw, d_weight, ndp * nrp);
 			error = cudaGetLastError();
 			if (error != cudaSuccess)
