@@ -89,12 +89,12 @@ bw.gwr<-function(formula, data, approach="CV",kernel="bisquare",adaptive=FALSE, 
   #Select the bandwidth by golden selection
   bw<-NA
   # ## make cluseter
-  if (parallel == "cluster") {
-    if (missing(cl)) {
+  if (parallel.method == "cluster") {
+    if (missing(parallel.arg)) {
       cl.n <- max(detectCores() - 4, 2)
       parallel.arg <- makeCluster(cl.n)
     } else cl.n <- length(parallel.arg)
-    clusterCall(parallel.arg, function() { library(ParGWmodel) })
+    clusterCall(parallel.arg, function() { library(GWmodel) })
   }
   # ## call for functions
   if(approach == "cv" || approach == "CV")
@@ -102,7 +102,7 @@ bw.gwr<-function(formula, data, approach="CV",kernel="bisquare",adaptive=FALSE, 
   else if(approach == "aic" || approach == "AIC" || approach == "AICc")
       bw <- gold(gwr.aic, lower, upper, adapt.bw = adaptive, x, y, kernel, adaptive, dp.locat, p, theta, longlat, dMat, T, parallel.method, parallel.arg)    
   # ## stop cluster
-  if (parallel == "cluster") {
+  if (parallel.method == "cluster") {
     if (missing(parallel.arg)) stopCluster(parallel.arg)
   }
   bw
@@ -152,6 +152,7 @@ gwr.cv<-function(bw, X, Y, kernel="bisquare",adaptive=FALSE, dp.locat, p=2, thet
     if(!inherits(gw.resi, "try-error")) CV.score <- gw.resi 
     else CV.score <- Inf
   } else if (parallel.method == "cluster") {
+    print("Parallel using cluster.")
     cl.n <- length(parallel.arg)
     cl.results <- clusterApplyLB(parallel.arg, 1:cl.n, function(group.i, cl.n, x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive) {
       cv.result <- try(gw_cv_all(x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive, cl.n, group.i))
