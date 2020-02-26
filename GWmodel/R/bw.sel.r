@@ -86,19 +86,26 @@ bw.gwr<-function(formula, data, approach="CV",kernel="bisquare",adaptive=FALSE, 
      
   }
   ########################## Now the problem for the golden selection is too computationally heavy
-    #Select the bandwidth by golden selection
-    bw<-NA
-    if(approach == "cv" || approach == "CV")
-       bw <- gold(gwr.cv, lower, upper, adapt.bw = adaptive, x, y, kernel, adaptive, dp.locat, p, theta, longlat, dMat, T, parallel.method, parallel.arg)
-    else if(approach == "aic" || approach == "AIC" || approach == "AICc")
-       bw <- gold(gwr.aic, lower, upper, adapt.bw = adaptive, x, y, kernel, adaptive, dp.locat, p, theta, longlat, dMat, T, parallel.method, parallel.arg)    
-   # bw<-NA
-#    if(approach=="cv"||approach=="CV")
-#       bw <- optimize(bw.cv,lower=lower,upper=upper,maximum=FALSE,X=x,Y=y,kernel=kernel,
-#       adaptive=adaptive, dp.locat=dp.locat, p=p, theta=theta, longlat=longlat,dMat=dMat,tol=.Machine$double.eps^0.25)
-#    else if(approach=="aic"||approach=="AIC"||approach=="AICc")
-#       bw<-optimize(bw.aic,lower=lower,upper=upper,x,y,kernel,adaptive, dp.locat, p, theta, longlat,dMat)    
-    bw
+  #Select the bandwidth by golden selection
+  bw<-NA
+  # ## make cluseter
+  if (parallel.method == "cluster") {
+    if (missing(parallel.arg)) {
+      cl.n <- max(detectCores() - 4, 2)
+      parallel.arg <- makeCluster(cl.n)
+    } else cl.n <- length(parallel.arg)
+    clusterCall(parallel.arg, function() { library(GWmodel) })
+  }
+  # ## call for functions
+  if(approach == "cv" || approach == "CV")
+      bw <- gold(gwr.cv, lower, upper, adapt.bw = adaptive, x, y, kernel, adaptive, dp.locat, p, theta, longlat, dMat, T, parallel.method, parallel.arg)
+  else if(approach == "aic" || approach == "AIC" || approach == "AICc")
+      bw <- gold(gwr.aic, lower, upper, adapt.bw = adaptive, x, y, kernel, adaptive, dp.locat, p, theta, longlat, dMat, T, parallel.method, parallel.arg)    
+  # ## stop cluster
+  if (parallel.method == "cluster") {
+    if (missing(parallel.arg)) stopCluster(parallel.arg)
+  }
+  bw
 
 }
 
@@ -145,20 +152,16 @@ gwr.cv<-function(bw, X, Y, kernel="bisquare",adaptive=FALSE, dp.locat, p=2, thet
     if(!inherits(gw.resi, "try-error")) CV.score <- gw.resi 
     else CV.score <- Inf
   } else if (parallel.method == "cluster") {
-    if (missing(parallel.arg)) {
-      parallel.arg.n <- max(detectCores() - 4, 2)
-      parallel.arg <- makeCluster(parallel.arg.n)
-    } else parallel.arg.n <- length(parallel.arg)
-    clusterCall(parallel.arg, function() { library(GWmodel) })
-    parallel.arg.results <- clusterApplyLB(parallel.arg, 1:parallel.arg.n, function(group.i, parallel.arg.n, x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive) {
-      cv.result <- gw_cv_all(x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive, parallel.arg.n, group.i)
+    print("Parallel using cluster.")
+    cl.n <- length(parallel.arg)
+    cl.results <- clusterApplyLB(parallel.arg, 1:cl.n, function(group.i, cl.n, x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive) {
+      cv.result <- try(gw_cv_all(x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive, cl.n, group.i))
       if(!inherits(gw.resi, "try-error")) return(cv.result) 
       else return(Inf)
-    }, parallel.arg.n, X, Y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive)
-    gw.resi <- unlist(parallel.arg.results)
-    if (any(is.infinite(gw.resi))) CV.score <- sum(gw.resi)
+    }, cl.n, X, Y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive)
+    gw.resi <- unlist(cl.results)
+    if (!all(is.infinite(gw.resi))) CV.score <- sum(gw.resi)
     else CV.score <- Inf
-    if (missing(parallel.arg)) stopCluster(parallel.arg)
   } else {
     CV<-numeric(dp.n)
     for (i in 1:dp.n) {
@@ -182,7 +185,7 @@ gwr.cv<-function(bw, X, Y, kernel="bisquare",adaptive=FALSE, dp.locat, p=2, thet
     if(adaptive) cat("Adaptive bandwidth:", bw, "CV score:", CV.score, "\n")
     else cat("Fixed bandwidth:", bw, "CV score:", CV.score, "\n")
   }
-  CV.score
+  ifelse(is.nan(CV.score), Inf, CV.score)
 }
 
 gwr.cv.contrib<-function(bw, X, Y, kernel="bisquare",adaptive=FALSE, dp.locat, p=2, theta=0, longlat=F,dMat,parallel.method=F,parallel.arg=NULL)
@@ -291,27 +294,22 @@ gwr.aic<-function(bw, X, Y, kernel="bisquare",adaptive=FALSE, dp.locat, p=2, the
     }
     else AICc.value <- Inf
   } else if (parallel.method == "cluster") {
-    if (missing(parallel.arg)) {
-      parallel.arg.n <- max(detectCores() - 4, 2)
-      parallel.arg <- makeCluster(parallel.arg.n)
-    } else parallel.arg.n <- length(parallel.arg)
-    clusterCall(parallel.arg, function() { library(GWmodel) })
-    parallel.arg.results <- clusterApplyLB(parallel.arg, 1:parallel.arg.n, function(group.i, parallel.arg.n, x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive) {
-      res <- try(gw_reg_all(x, y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, parallel.arg.n, group.i))
+    cl.n <- length(parallel.arg)
+    cl.results <- clusterApplyLB(parallel.arg, 1:cl.n, function(group.i, cl.n, x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive) {
+      res <- try(gw_reg_all(x, y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, cl.n, group.i))
       if(!inherits(res, "try-error")) return(res) 
       else return(NULL)
-    }, parallel.arg.n, X, Y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive)
-    if (!any(is.null(parallel.arg.results))) {
-      betas <- matrix(nrow = dp.n, ncol=var.n)
+    }, cl.n, X, Y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive)
+    if (!any(is.null(cl.results))) {
+      betas <- matrix(0, nrow = dp.n, ncol=var.n)
       s_hat <- numeric(2)
-      for (i in 1:parallel.arg.n) {
-        res <- parallel.arg.results[[i]]
+      for (i in 1:cl.n) {
+        res <- cl.results[[i]]
         betas = betas + res$betas
         s_hat = s_hat + res$s_hat
       }
       AICc.value <- AICc1(Y, X, betas, s_hat)
     } else AICc.value <- Inf
-    if (missing(parallel.arg)) stopCluster(parallel.arg)
   } else {
     s_hat <- numeric(2)
     betas <- matrix(nrow = dp.n, ncol = var.n)

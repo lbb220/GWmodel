@@ -45,6 +45,13 @@ gwr.model.selection<-function(DeVar=NULL,InDeVars=NULL, data=list(),bw=NULL,appr
   level.vars <- c()
   tag <- 1
   adapt <- NULL
+  if (parallel.method == "cluster") {
+     if (missing(parallel.arg)) {
+        parallel.arg.n <- max(detectCores() - 4, 2)
+        parallel.arg <- makeCluster(parallel.arg.n)
+      } else parallel.arg.n <- length(parallel.arg)
+      clusterCall(parallel.arg, function() { library(GWmodel) })
+  }
   for (i in 1:var.n) {
     AICcs <- c()
     for (j in 1:(var.n - i + 1)) {
@@ -72,7 +79,7 @@ gwr.model.selection<-function(DeVar=NULL,InDeVars=NULL, data=list(),bw=NULL,appr
       } 
 
       ##############Calibrate the GWR model
-      betas <- matrix(nrow = dp.n, ncol = var.n)
+      betas <- matrix(0, nrow = dp.n, ncol = ncol(x))
       s_hat <- numeric(2)
       if (parallel.method == FALSE) {
         res <- gw_reg_all(x, y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive)
@@ -85,12 +92,14 @@ gwr.model.selection<-function(DeVar=NULL,InDeVars=NULL, data=list(),bw=NULL,appr
         res <- gw_reg_all_omp(x, y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, threads)
         betas <- res$betas
         s_hat <- res$s_hat
+      } else if (parallel.method == "cuda") {
+        if (missing(parallel.arg)) { groupl <- 16 } else {
+          groupl <- ifelse(is(parallel.arg, "numeric"), parallel.arg, 16)
+        }
+        res <- gw_reg_all_cuda(x, y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, groupl)
+        betas <- res$betas
+        s_hat <- res$s_hat
       } else if (parallel.method == "cluster") {
-        if (missing(parallel.arg)) {
-          parallel.arg.n <- max(detectCores() - 4, 2)
-          parallel.arg <- makeCluster(parallel.arg.n)
-        } else parallel.arg.n <- length(parallel.arg)
-        clusterCall(parallel.arg, function() { library(GWmodel) })
         parallel.arg.results <- clusterApplyLB(parallel.arg, 1:parallel.arg.n, function(group.i, parallel.arg.n, x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive) {
           res <- gw_reg_all(x, y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, parallel.arg.n, group.i)
           return(res)
@@ -100,7 +109,6 @@ gwr.model.selection<-function(DeVar=NULL,InDeVars=NULL, data=list(),bw=NULL,appr
           betas = betas + res$betas
           s_hat = s_hat + res$s_hat
         }
-        if (missing(parallel.arg)) stopCluster(parallel.arg)
       } else {
         for (i in 1:dp.n)
         {
@@ -121,6 +129,9 @@ gwr.model.selection<-function(DeVar=NULL,InDeVars=NULL, data=list(),bw=NULL,appr
     idx <- which.min(AICcs)[1]
     level.vars <- c(level.vars, InDeVars.Sub[idx])
     InDeVars.Sub <- InDeVars.Sub[-idx]
+  }
+  if (parallel.method == "cluster") {
+    if (missing(parallel.arg)) stopCluster(parallel.arg)     
   }
   res <- list(model.list, GWR.df)
   res
