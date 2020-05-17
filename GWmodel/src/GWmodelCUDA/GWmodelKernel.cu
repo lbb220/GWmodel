@@ -417,9 +417,9 @@ cudaError_t gw_xdy_cuda(const double* d_x, const double* d_y, int n, double * d_
 __global__ void gw_xdx_kernel(const double* x, int n, double* xdx)
 {
 	int index = blockIdx.x * blockDim.x + threadIdx.x;
-	int i = ((index >= n) ? n - 1 : index);
-	int a = x[i];
-	xdx[i] = a * a;
+	if (index >= n) return;
+	double a = x[index];
+	xdx[index] = a * a;
 }
 
 cudaError_t gw_xdx_cuda(const double* d_x, int n, double * d_xdotx, int threads)
