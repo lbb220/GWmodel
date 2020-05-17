@@ -1,8 +1,18 @@
 // [[Rcpp::depends(RcppArmadillo)]]
+// [[Rcpp::plugins(openmp)]]
 #include <RcppArmadillo.h>
 #include <math.h>
+#include <omp.h>
 using namespace Rcpp;
 using namespace arma;
+
+#define POWDI(x,i) pow(x,i)
+
+#define GAUSSIAN 0
+#define EXPONENTIAL 1
+#define BISQUARE 2
+#define TRICUBE 3
+#define BOXCAR 4
 
 //---------------------------------------------------------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------------------------------------------------------
@@ -495,12 +505,28 @@ vec AICc_rss(vec y, mat x, mat beta, mat S)
 	//return 2*enp + 2*n*log(ss/n) + 2*enp*(enp+1)/(n - enp - 1);
 }
 
+// [[Rcpp::export]]
+vec AICc_rss1(vec y, mat x, mat beta, vec s_hat)
+{
+  vec result(3);
+  double ss = rss(y, x, beta);
+  result[0] = ss;
+  int n = x.n_rows;
+  double AIC = n * log(ss / n) + n * log(2 * datum::pi) + n + s_hat(0);
+  double AICc = n * log(ss / n) + n * log(2 * datum::pi) + n * ((n + s_hat(0)) / (n - 2 - s_hat(0))); //AICc
+  result[1] = AIC;
+  result[2] = AICc;
+  return result;
+  //return 2*enp + 2*n*log(ss/n) + 2*enp*(enp+1)/(n - enp - 1);
+}
+
 //Caculate the i row of
 // [[Rcpp::export]]
 mat Ci_mat(mat x, vec w)
 {
 	return inv(trans(x) * diagmat(w) * x) * trans(x) * diagmat(w);
 }
+
 //Scalable GWR C++ functions
 // [[Rcpp::export]]
 List scgwr_pre(mat x, vec y, int bw, int poly, double b0, mat g0, mat neighbour) {
@@ -723,4 +749,391 @@ List scgwr_reg(mat x, vec y, int bw, int poly, mat G0, mat Mx0, mat My0, mat XtX
     Named("tr.StS") = trStS,
     Named("betas.SE") = betasSE
   );
+}
+
+double sp_gcdist(double lon1, double lon2, double lat1, double lat2) {
+  
+  double F, G, L, sinG2, cosG2, sinF2, cosF2, sinL2, cosL2, S, C;
+  double w, R, a, f, D, H1, H2;
+  double lat1R, lat2R, lon1R, lon2R, DE2RA;
+  
+  DE2RA = M_PI/180;
+  a = 6378.137;              /* WGS-84 equatorial radius in km */
+    f = 1.0/298.257223563;     /* WGS-84 ellipsoid flattening factor */
+    
+    if (fabs(lat1 - lat2) < DOUBLE_EPS) {
+      if (fabs(lon1 - lon2) < DOUBLE_EPS) {
+        return 0.0;
+        /* Wouter Buytaert bug caught 100211 */
+      } else if (fabs((fabs(lon1) + fabs(lon2)) - 360.0) < DOUBLE_EPS) {
+        return 0.0;
+      }
+    }
+    lat1R = lat1*DE2RA;
+    lat2R = lat2*DE2RA;
+    lon1R = lon1*DE2RA;
+    lon2R = lon2*DE2RA;
+    
+    F = ( lat1R + lat2R )/2.0;
+    G = ( lat1R - lat2R )/2.0;
+    L = ( lon1R - lon2R )/2.0;
+    
+    /*
+    printf("%g %g %g %g; %g %g %g\n",  *lon1, *lon2, *lat1, *lat2, F, G, L);
+    */
+    
+    sinG2 = POWDI( sin( G ), 2 );
+    cosG2 = POWDI( cos( G ), 2 );
+    sinF2 = POWDI( sin( F ), 2 );
+    cosF2 = POWDI( cos( F ), 2 );
+    sinL2 = POWDI( sin( L ), 2 );
+    cosL2 = POWDI( cos( L ), 2 );
+    
+    S = sinG2*cosL2 + cosF2*sinL2;
+    C = cosG2*cosL2 + sinF2*sinL2;
+    
+    w = atan( sqrt( S/C ) );
+    R = sqrt( S*C )/w;
+    
+    D = 2*w*a;
+    H1 = ( 3*R - 1 )/( 2*C );
+    H2 = ( 3*R + 1 )/( 2*S );
+    
+    return D*( 1 + f*H1*sinF2*cosG2 - f*H2*cosF2*sinG2 ); 
+}
+
+vec sp_dists(mat dp, vec loc) {
+  int N = dp.n_rows, j;
+  vec dists(N, fill::zeros);
+  double uout = loc(0), vout = loc(1);
+  
+  for (j = 0; j < N; j++) {
+    dists(j) = sp_gcdist(dp(j, 0), uout, dp(j, 1), vout);
+  }
+  return dists;
+}
+
+// [[Rcpp::export]]
+mat gw_dist(mat dp, mat rp, int focus, double p, double theta, bool longlat, bool rp_given) {
+  int ndp = dp.n_rows, nrp = rp.n_rows;
+  int isFocus = focus > -1;
+  mat dists;
+  if (p != 2 && theta != 0 && !longlat) {
+    dp = coordinate_rotate(dp, theta);
+    rp = coordinate_rotate(rp, theta);
+  }
+  if (isFocus) {
+    mat prp = trans(rp.row(focus));
+    if (longlat) {
+      return sp_dists(dp, prp);
+    } else {
+      if (p == 2.0)
+        return eu_dist_vec(dp, prp);
+      else if(p == 1.0)
+        return cd_dist_vec(dp, prp);
+      else if(p == -1.0)
+        return md_dist_vec(dp, prp);
+      else
+        return mk_dist_vec(dp, prp, p);
+    }
+  } else {
+    if (longlat) {
+      mat dists(ndp, nrp, fill::zeros);
+      for (int i = 0; i < nrp; i++) {
+        dists.col(i) = sp_dists(dp, trans(rp.row(i)));
+      }
+      return trans(dists);
+    } else {
+      if (p == 2.0)
+        return rp_given ? eu_dist_mat(dp, rp) : eu_dist_smat(dp);
+      else if (p == 1.0)
+        return rp_given ? cd_dist_mat(dp, rp) : cd_dist_smat(dp);
+      else if (p == -1.0)
+        return rp_given ? md_dist_mat(dp, rp) : md_dist_smat(dp);
+      else
+        return rp_given ? mk_dist_mat(dp, rp, p) : mk_dist_smat(dp, p);
+    }
+  }
+}
+
+double gw_weight_gaussian(double dist, double bw) {
+  return exp(pow(dist, 2)/((-2)*pow(bw, 2)));
+}
+
+double gw_weight_exponential(double dist, double bw) {
+  return exp(-dist/bw);
+}
+
+double gw_weight_bisquare(double dist, double bw) {
+  return dist > bw ? 0 : pow(1 - pow(dist, 2)/pow(bw, 2), 2);
+}
+
+double gw_weight_tricube(double dist, double bw) {
+  return dist > bw ? 0 : pow(1 - pow(dist, 3)/pow(bw, 3), 3);
+}
+
+double gw_weight_boxcar(double dist, double bw) {
+  return dist > bw ? 0 : 1;
+}
+
+typedef double (*KERNEL)(double, double);
+const KERNEL GWRKernel[5] = {
+  gw_weight_gaussian,
+  gw_weight_exponential,
+  gw_weight_bisquare,
+  gw_weight_tricube,
+  gw_weight_boxcar
+};
+
+// [[Rcpp::export]]
+mat gw_weight(mat dist, double bw, int kernel, bool adaptive) {
+  dist = trans(dist);
+  const KERNEL *kerf = GWRKernel + kernel;
+  int nc = dist.n_cols, nr = dist.n_rows;
+  mat w(nr, nc, fill::zeros);
+  if (adaptive) {
+    for (int r = 0; r < nr; r++) {
+      double dn = bw / nc, fixbw = 0;
+      if (dn <= 1) {
+        mat vdist = sort(dist.row(r));
+        fixbw = vdist(0, int(bw) - 1);
+      } else {
+        fixbw = dn * max(dist.row(r));
+      }
+      for (int c = 0; c < nc; c++) {
+        w(r, c) = (*kerf)(dist(r, c), fixbw);
+      }
+    }
+  } else {
+    for (int r = 0; r < nr; r++) {
+      for (int c = 0; c < nc; c++) {
+        w(r, c) = (*kerf)(dist(r, c), bw);
+      }
+    }
+  }
+  return trans(w);
+}
+
+// [[Rcpp::export]]
+List gw_reg_all(mat x, vec y, mat dp, bool rp_given, mat rp, bool dm_given, mat dmat, bool hatmatrix, 
+                double p, double theta, bool longlat, 
+                double bw, int kernel, bool adaptive,
+                int ngroup, int igroup) {
+  int n = rp.n_rows, k = x.n_cols;
+  mat betas(n, k, fill::zeros);
+  int lgroup = floor(((double)n) / ngroup);
+  int iStart = igroup * lgroup, iEnd = (igroup + 1 < ngroup) ? (igroup + 1) * lgroup : n;
+  if (hatmatrix) {
+    mat betasSE(n, k, fill::zeros);
+    mat s_hat(1, 2, fill::zeros);
+    mat qdiag(1, n, fill::zeros);
+    mat rowsumSE(n, 1, fill::ones);
+    // clock_t clock0 = clock(), clock1;
+    for (int i = iStart; i < iEnd; i++) {
+      mat d = dm_given ? dmat.col(i) : gw_dist(dp, rp, i, p, theta, longlat, rp_given);
+      mat w = gw_weight(d, bw, kernel, adaptive);
+      mat ws(1, k, fill::ones);
+      mat xtw = trans(x %(w * ws));
+      mat xtwx = xtw * x;
+      mat xtwy = trans(x) * (w % y);
+      mat xtwx_inv = inv(xtwx);
+      betas.row(i) = trans(xtwx_inv * xtwy);
+      // hatmatrix
+      mat ci = xtwx_inv * xtw;
+      mat si = x.row(i) * ci;
+      betasSE.row(i) = trans((ci % ci) * rowsumSE);
+      s_hat(0) += si(0, i);
+      s_hat(1) += det(si * trans(si));
+      mat onei(1, n, fill::zeros);
+      onei(i) = 1;
+      mat p = onei - si;
+      qdiag += p % p;
+    }
+    return List::create(
+      Named("betas") = betas,
+      Named("betas.SE") = betasSE,
+      Named("s_hat") = s_hat,
+      Named("q.diag") = qdiag
+    );
+  } else {
+    for (int i = iStart; i < iEnd; i++) {
+      mat d = dm_given ? dmat.row(i) : gw_dist(dp, rp, i, p, theta, longlat, rp_given);
+      mat w = gw_weight(d, bw, kernel, adaptive);
+      mat ws(1, x.n_cols, fill::ones);
+      mat xtw = trans(x %(w * ws));
+      mat xtwx = xtw * x;
+      mat xtwy = trans(x) * (w % y);
+      mat xtwx_inv = inv(xtwx);
+      betas.row(i) = trans(xtwx_inv * xtwy);
+    }
+    return List::create(
+      Named("betas") = betas
+    );
+  }
+}
+
+// [[Rcpp::export]]
+List gw_reg_all_omp(mat x, vec y, mat dp, bool rp_given, mat rp, bool dm_given, mat dmat, bool hatmatrix, 
+                    double p, double theta, bool longlat, 
+                    double bw, int kernel, bool adaptive,
+                    int threads, int ngroup, int igroup) {
+  int n = rp.n_rows, k = x.n_cols;
+  mat betas(n, k, fill::zeros);
+  int lgroup = floor(((double)n) / ngroup);
+  int iStart = igroup * lgroup, iEnd = (igroup + 1 < ngroup) ? (igroup + 1) * lgroup : n;
+  if (hatmatrix) {
+    mat betasSE(n, k, fill::zeros);
+    mat s_hat(1, 2, fill::zeros);
+    mat qdiag(1, n, fill::zeros);
+    mat rowsumSE(n, 1, fill::ones);
+    vec s_hat1(n, fill::zeros), s_hat2(n, fill::zeros);
+    int thread_nums = threads > 0 ? threads : omp_get_num_procs() - 1;
+    mat qdiag_all(thread_nums, n, fill::zeros);
+    bool flag_error = false;
+#pragma omp parallel for num_threads(thread_nums)
+    for (int i = iStart; i < iEnd; i++) {
+      if (!flag_error) {
+        int thread_id = omp_get_thread_num();
+        mat d = dm_given ? dmat.col(i) : gw_dist(dp, rp, i, p, theta, longlat, rp_given);
+        mat w = gw_weight(d, bw, kernel, adaptive);
+        mat ws(1, k, fill::ones);
+        mat xtw = trans(x %(w * ws));
+        mat xtwx = xtw * x;
+        mat xtwy = trans(x) * (w % y);
+        try {
+          mat xtwx_inv = inv(xtwx);
+          betas.row(i) = trans(xtwx_inv * xtwy);
+          // hatmatrix
+          mat ci = xtwx_inv * xtw;
+          mat si = x.row(i) * ci;
+          betasSE.row(i) = trans((ci % ci) * rowsumSE);
+          // s_hat(0) += si(0, i);
+          // s_hat(1) += det(si * trans(si));
+          s_hat1(i) = si(0, i);
+          s_hat2(i) = det(si * trans(si));
+          mat onei(1, n, fill::zeros);
+          onei(i) = 1;
+          mat p = onei - si;
+          qdiag_all.row(thread_id) += p % p;
+        } catch (...) {
+          flag_error = true;
+        }
+      }
+    }
+    if (flag_error) {
+      throw exception("Matrix seems singular");
+    } else {
+      s_hat(0) = sum(s_hat1);
+      s_hat(1) = sum(s_hat2);
+      qdiag = mat(1, thread_nums, fill::ones) * qdiag_all;
+      return List::create(
+        Named("betas") = betas,
+        Named("betas.SE") = betasSE,
+        Named("s_hat") = s_hat,
+        Named("q.diag") = qdiag
+      );
+    }
+  } else {
+    bool flag_error = false;
+    for (int i = iStart; i < iEnd; i++) {
+      if (!flag_error) {
+        mat d = dm_given ? dmat.row(i) : gw_dist(dp, rp, i, p, theta, longlat, rp_given);
+        mat w = gw_weight(d, bw, kernel, adaptive);
+        mat ws(1, x.n_cols, fill::ones);
+        mat xtw = trans(x %(w * ws));
+        mat xtwx = xtw * x;
+        mat xtwy = trans(x) * (w % y);
+        try {
+          mat xtwx_inv = inv(xtwx);
+          betas.row(i) = trans(xtwx_inv * xtwy);
+        } catch (...) {
+          flag_error = true;
+        }
+      }
+    }
+    if (flag_error) {
+      throw exception("Matrix seems singular.");
+    } else {
+      return List::create(
+        Named("betas") = betas
+      );
+    }
+  }
+}
+
+// [[Rcpp::export]]
+double gw_cv_all(mat x, vec y, mat dp, bool dm_given, mat dmat, 
+                 double p, double theta, bool longlat, 
+                 double bw, int kernel, bool adaptive,
+                 int ngroup, int igroup) {
+  int n = dp.n_rows;
+  double cv = 0.0;
+  int lgroup = floor(((double)n) / ngroup);
+  int iStart = igroup * lgroup, iEnd = (igroup + 1 < ngroup) ? (igroup + 1) * lgroup : n;
+  for (int i = iStart; i < iEnd; i++) {
+    mat d = dm_given ? dmat.col(i) : gw_dist(dp, dp, i, p, theta, longlat, false);
+    mat w = gw_weight(d, bw, kernel, adaptive);
+    w(i, 0) = 0.0;
+    mat ws(1, x.n_cols, fill::ones);
+    mat xtw = trans(x %(w * ws));
+    mat xtwx = xtw * x;
+    mat xtwy = trans(x) * (w % y);
+    mat xtwx_inv = inv(xtwx);
+    mat betas = xtwx_inv * xtwy;
+    double res = y(i) - det(x.row(i) * betas);
+    cv += res * res;
+  }
+  return cv;
+}
+
+// [[Rcpp::export]]
+double gw_cv_all_omp(mat x, vec y, mat dp, bool dm_given, mat dmat, 
+                     double p, double theta, bool longlat, 
+                     double bw, int kernel, bool adaptive,
+                     int threads, int ngroup, int igroup) {
+  int n = dp.n_rows;
+  int thread_nums = omp_get_num_procs() - 1;
+  vec cv(thread_nums, fill::zeros);
+  int lgroup = floor(((double)n) / ngroup);
+  int iStart = igroup * lgroup, iEnd = (igroup + 1 < ngroup) ? (igroup + 1) * lgroup : n;
+  bool flag_error = false;
+#pragma omp parallel for num_threads(thread_nums)
+  for (int i = iStart; i < iEnd; i++) {
+    if (!flag_error) {
+      int thread_id = threads > 0 ? threads : omp_get_thread_num();
+      mat d = dm_given ? dmat.col(i) : gw_dist(dp, dp, i, p, theta, longlat, false);
+      mat w = gw_weight(d, bw, kernel, adaptive);
+      w(i, 0) = 0.0;
+      mat ws(1, x.n_cols, fill::ones);
+      mat xtw = trans(x %(w * ws));
+      mat xtwx = xtw * x;
+      mat xtwy = trans(x) * (w % y);
+      try {
+        mat xtwx_inv = inv(xtwx);
+        mat betas = xtwx_inv * xtwy;
+        double res = y(i) - det(x.row(i) * betas);
+        cv(thread_id) += res * res;
+      } catch (...) {
+        flag_error = true;
+      }
+    }
+  }
+  if (flag_error) {
+    throw exception("Matrix seems singular.");
+  }
+  return sum(cv);
+}
+
+// [[Rcpp::export]]
+vec gw_local_r2(mat dp, vec dybar2, vec dyhat2, bool dm_given, mat dmat, double p, double theta, bool longlat, double bw, int kernel, bool adaptive) {
+  int n = dp.n_rows;
+  vec localR2(n, fill::zeros);
+  for (int i = 0; i < n; i++) {
+    mat d = dm_given ? dmat.col(i) : gw_dist(dp, dp, i, p, theta, longlat, false);
+    mat w = gw_weight(d, bw, kernel, adaptive);
+    double tss = sum(dybar2 % w);
+    double rss = sum(dyhat2 % w);
+    localR2(i) = (tss - rss) / tss;
+  }
+  return localR2;
 }

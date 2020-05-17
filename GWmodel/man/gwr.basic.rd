@@ -11,7 +11,8 @@ This function implements basic GWR
 }
 \usage{
 gwr.basic(formula, data, regression.points, bw, kernel="bisquare",
-adaptive=FALSE, p=2, theta=0, longlat=F,dMat,F123.test=F,cv=F, W.vect=NULL)
+adaptive=FALSE, p=2, theta=0, longlat=F,dMat,F123.test=F,cv=F, W.vect=NULL,
+parallel.method=FALSE,parallel.arg=NULL)
 \method{print}{gwrm}(x, \dots)
 }
 
@@ -40,6 +41,15 @@ adaptive=FALSE, p=2, theta=0, longlat=F,dMat,F123.test=F,cv=F, W.vect=NULL)
   \item{cv}{if TRUE, cross-validation data will be calculated and returned in the output Spatial*DataFrame}
   \item{W.vect}{default NULL, if given it will be used to weight the distance weighting matrix}
   \item{x}{an object of class \dQuote{gwrm}, returned by the function \code{\link{gwr.basic}}}
+  \item{parallel.method}{Specified by `FALSE` for serial approach, 
+                         by `"omp"` for multi-thread approach implemented via OpenMP, 
+                         by `"cluster"` for multi-process approach implemented via `parallel` package,
+                         by `"cuda"` for parallel approach implemented via CUDA}
+  \item{parallel.arg}{Set the argument for parallel approach. 
+                      If `parallel.method` is `FALSE`, there is no need to set its value. 
+                      If `parallel.method` is `"omp"`, its value is used to set how many threads should be created (default by cores of *cores of CPU* - 1).
+                      If `parallel.method` is `"cluster"`, its value is used to set how many R session should be created (default by cores of *cores of CPU* - 1).
+                      If `parallel.method` is `"cuda"`, its value is used to set how many samples is included in one group during the calibration. This value should not be too big to avoid the overflow of GPU memory. }
   \item{...}{arguments passed through (unused)}
 }
 \value{
