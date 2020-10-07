@@ -1,4 +1,7 @@
 /src-*
 /src/*.o
+/src/*.so
 /src/*.dll
 /src/GWmodelCUDA/*.lib
+/src/Makevars
+config.*
