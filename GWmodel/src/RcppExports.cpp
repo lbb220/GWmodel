@@ -596,7 +596,7 @@ RcppExport SEXP GWmodel_gw_reg_cuda(SEXP xSEXP, SEXP ySEXP, SEXP dpSEXP, SEXP rp
     cuda->SetDp(r, dp(r, 0), dp(r, 1));
   }
   if (rp_given) {
-    for (int r = 0; r < N; r++) {
+    for (int r = 0; r < n; r++) {
       cuda->SetRp(r, rp(r, 0), rp(r, 1));
     }
   }
@@ -610,8 +610,8 @@ RcppExport SEXP GWmodel_gw_reg_cuda(SEXP xSEXP, SEXP ySEXP, SEXP dpSEXP, SEXP rp
   try {
     bool gwr_status = cuda->Regression(hatmatrix, p, theta, longlat, bw, kernel, adaptive, ngroup, gpuID);
     if (gwr_status) {
-      mat betas(N, K, fill::zeros);
       if (hatmatrix) {
+        mat betas(N, K, fill::zeros);
         mat betasSE(N, K, fill::zeros);
         vec s_hat(2, fill::zeros);
         vec qdiag(N, fill::zeros);
@@ -631,7 +631,8 @@ RcppExport SEXP GWmodel_gw_reg_cuda(SEXP xSEXP, SEXP ySEXP, SEXP dpSEXP, SEXP rp
           Named("q.diag") = qdiag
         ));
       } else {
-        for (int r = 0; r < N; r++) {
+        mat betas(n, K, fill::zeros);
+        for (int r = 0; r < n; r++) {
           for (int c = 0; c < K; c++) {
             betas(r, c) = cuda->GetBetas(r, c);
           }
