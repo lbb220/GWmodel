@@ -887,31 +887,30 @@ const KERNEL GWRKernel[5] = {
 
 // [[Rcpp::export]]
 mat gw_weight(mat dist, double bw, int kernel, bool adaptive) {
-  dist = trans(dist);
   const KERNEL *kerf = GWRKernel + kernel;
-  int nc = dist.n_cols, nr = dist.n_rows;
+  int nr = dist.n_rows, nc = dist.n_cols;
   mat w(nr, nc, fill::zeros);
   if (adaptive) {
-    for (int r = 0; r < nr; r++) {
-      double dn = bw / nc, fixbw = 0;
+    for (int c = 0; c < nc; c++) {
+      double dn = bw / nr, fixbw = 0;
       if (dn <= 1) {
-        mat vdist = sort(dist.row(r));
-        fixbw = vdist(0, int(bw) - 1);
+        vec vdist = sort(dist.col(c));
+        fixbw = vdist(int(bw) - 1);
       } else {
-        fixbw = dn * max(dist.row(r));
+        fixbw = dn * max(dist.col(c));
       }
-      for (int c = 0; c < nc; c++) {
+      for (int r = 0; r < nr; r++) {
         w(r, c) = (*kerf)(dist(r, c), fixbw);
       }
     }
   } else {
-    for (int r = 0; r < nr; r++) {
-      for (int c = 0; c < nc; c++) {
+    for (int c = 0; c < nc; c++) {
+      for (int r = 0; r < nr; r++) {
         w(r, c) = (*kerf)(dist(r, c), bw);
       }
     }
   }
-  return trans(w);
+  return w;
 }
 
 // [[Rcpp::export]]
@@ -957,7 +956,7 @@ List gw_reg_all(mat x, vec y, mat dp, bool rp_given, mat rp, bool dm_given, mat 
     );
   } else {
     for (int i = iStart; i < iEnd; i++) {
-      mat d = dm_given ? dmat.row(i) : gw_dist(dp, rp, i, p, theta, longlat, rp_given);
+      mat d = dm_given ? dmat.col(i) : gw_dist(dp, rp, i, p, theta, longlat, rp_given);
       mat w = gw_weight(d, bw, kernel, adaptive);
       mat ws(1, x.n_cols, fill::ones);
       mat xtw = trans(x %(w * ws));
@@ -1037,7 +1036,7 @@ List gw_reg_all_omp(mat x, vec y, mat dp, bool rp_given, mat rp, bool dm_given, 
     bool flag_error = false;
     for (int i = iStart; i < iEnd; i++) {
       if (!flag_error) {
-        mat d = dm_given ? dmat.row(i) : gw_dist(dp, rp, i, p, theta, longlat, rp_given);
+        mat d = dm_given ? dmat.col(i) : gw_dist(dp, rp, i, p, theta, longlat, rp_given);
         mat w = gw_weight(d, bw, kernel, adaptive);
         mat ws(1, x.n_cols, fill::ones);
         mat xtw = trans(x %(w * ws));
