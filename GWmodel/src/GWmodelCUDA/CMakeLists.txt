@@ -12,6 +12,9 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 find_package(cuBLAS REQUIRED)
 include_directories(${CUBLAS_INCLUDE_DIRS})
 
+set(CMAKE_BUILD_TYPE "Release")
+add_definitions(-DCREATDLL_EXPORTS)
+
 set(SOURCES_CXX
     CGWmodelCUDA.cpp
     IGWmodelCUDA.cpp
@@ -28,7 +31,6 @@ set(HEADERS
     IGWmodelCUDA.h
 )
 
-set(CMAKE_BUILD_TYPE "Release")
 
 add_library(GWmodelCUDA64 SHARED ${SOURCES_CUDA} ${SOURCES_CXX} ${HEADERS})
 set_property(TARGET GWmodelCUDA64 PROPERTY CUDA_ARCHITECTURES 35 37 52 60 61 70 75)
