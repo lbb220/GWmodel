@@ -10,9 +10,9 @@
 #include "helper.h"
 #include "CGWmodelCUDA.h"
 #include "GWmodelKernel.h"
-#ifdef _DEBUG
+#ifdef ENABLE_PREVIEW
 #include "preview.h"
-#endif // _DEBUG
+#endif // ENABLE_PREVIEW
 
 using namespace arma;
 
