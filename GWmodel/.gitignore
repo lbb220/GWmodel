@@ -1,10 +1,10 @@
 /src-*
-/src/*.o
-/src/*.so
-/src/*.dll
-/src/GWmodelCUDA/*.lib
-/src/GWmodelCUDA/*.exe
-/src/GWmodelCUDA/*.log
+**/*.o
+**/*.so
+**/*.lib
+**/*.dll
+**/*.exe
+**/*.log
 /src/GWmodelCUDA/build
 /src/Makevars
 config.*
