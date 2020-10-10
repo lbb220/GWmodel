@@ -203,7 +203,11 @@ gwr.lcr <-function(formula, data, regression.points, bw, kernel="bisquare",
       CV<-numeric(dp.n)
       if(cv)
         CV<-gwr.lcr.cv.contrib(bw,x,y,dp.locat,kernel,lambda,lambda.adjust,cn.thresh,adaptive, p, theta, longlat,dMat)
-      GW.diagnostic<-list(AIC=aic,AICc=aicc,enp=enp, edf=edf,RSS=rss)
+      ######Add R2 and adjusted-R2 values
+      yss.g <- sum((y - mean(y))^2)
+      gw.R2<-1-rss/yss.g; ##R Square value
+      gwR2.adj<-1-(1-gw.R2)*(dp.n-1)/(edf-1) #Adjusted R squared value 
+      GW.diagnostic<-list(AIC=aic,AICc=aicc,enp=enp, edf=edf,RSS=rss, gw.R2 = gw.R2, gwR2.adj = gwR2.adj)
    }
    ####encapsulate the GWR results
    GW.arguments<-list(formula=formula,rp.given=rp.given,bw=bw,
@@ -327,6 +331,8 @@ print.gwrlcr<-function(x, ...)
                     x$GW.diagnostic$AICc, "\n")
 		cat("   AIC (GWR book, Fotheringham, et al. 2002,GWR p. 96, eq. 4.22):", x$GW.diagnostic$AIC, "\n")
 		cat("   Residual sum of squares:", x$GW.diagnostic$RSS, "\n")
+    cat("   R-square value: ",x$GW.diagnostic$gw.R2,"\n")
+		cat("   Adjusted R-square value: ",x$GW.diagnostic$gwR2.adj,"\n")	
   }
 	cat("\n   ***********************************************************************\n")
 	cat("   Program stops at:", as.character(x$timings$stop), "\n")
