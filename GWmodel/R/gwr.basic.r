@@ -147,6 +147,7 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
        stop("Dimensions of dMat are not correct")
   }
   #############Calibration the model
+  timings[["calibration"]] <- Sys.time()
   # W <- matrix(nrow = dp.n, ncol = rp.n)
   s_hat <- c(0.0, 0.0)
   q.diag <- matrix(0, 1, dp.n)
@@ -233,6 +234,7 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
     }
   }
   ########################Diagnostic information
+  timings[["diagnostic"]] <- Sys.time()
   GW.diagnostic <- NA
   Ftests <- list()
   if (hatmatrix)
@@ -305,6 +307,7 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
   }
 
   ####encapsulate the GWR results
+  timings[["encapsulate"]] <- Sys.time()
   GW.arguments <- list(formula = formula, rp.given = rp.given, hatmatrix = hatmatrix, bw = bw,
                        kernel = kernel, adaptive = adaptive, p = p, theta = theta, longlat = longlat,
                        DM.given = DM1.given, F123.test = F123.test)
