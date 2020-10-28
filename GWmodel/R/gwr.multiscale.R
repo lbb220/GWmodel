@@ -5,6 +5,10 @@
 # within each step of back-fitting, employing an existing criteria for a basic GWR
 
 # Improvements: Set the corresponding threshold for each selected bandwidth, i.e. fix the bandwidth if the change of the selected bandwidths is less than threshold
+gw.fitted <- function(X, beta) {
+  .Call(`GWmodel_fitted`, X, beta)
+}
+
 gwr.multiscale <- function(formula, data, kernel="bisquare", adaptive=FALSE, criterion="dCVR", max.iterations=2000,threshold=0.00001, dMats, p.vals, theta.vals,longlat=FALSE,
                            bws0, bw.seled=rep(F, length(bws0)), approach = "AIC", bws.thresholds=rep(0.1, length(dMats)), bws.reOpts=5, verbose=F, hatmatrix=T, 
                            predictor.centered=rep(T, length(bws0)-1),nlower = 10)
@@ -89,13 +93,12 @@ gwr.multiscale <- function(formula, data, kernel="bisquare", adaptive=FALSE, cri
     x1 <- x
   }
   #n.scal <- length(which(predictor.centered))
+  if (is.null(nrow(x1))) x1 <- matrix(x1, nrow=length(x1))
   if(n.cent>1)
     predictors.centered.means <- colMeans(x1[,predictor.centered])
-  else if (n.cent==1)
+  else 
     predictors.centered.means <- mean(x1[,predictor.centered])
-  else
-    predictors.centered.means <- NA
-  if(n.cent>=1)
+  if(n.cent>1)
   {
     #meancent <- partial(scale, scale=FALSE)
     x1[,predictor.centered] <- scale(x1[,predictor.centered], scale=FALSE)
