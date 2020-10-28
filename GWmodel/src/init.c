@@ -46,6 +46,18 @@ extern SEXP GWmodel_gw_cv_all_omp(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP
 extern SEXP GWmodel_gw_local_r2(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP GWmodel_gw_reg_cuda(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP GWmodel_gw_cv_all_cuda(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP GWmodel_BIC(SEXP, SEXP, SEXP, SEXP);
+extern SEXP GWmodel_box_wt_vec(SEXP, SEXP);
+extern SEXP GWmodel_box_wt_vec_ad(SEXP, SEXP);
+extern SEXP GWmodel_gau_wt_vec_ad(SEXP, SEXP);
+extern SEXP GWmodel_bis_wt_vec_ad(SEXP, SEXP);
+extern SEXP GWmodel_tri_wt_vec_ad(SEXP, SEXP);
+extern SEXP GWmodel_exp_wt_vec_ad(SEXP, SEXP);
+extern SEXP GWmodel_gw_reg_2(SEXP, SEXP, SEXP);
+extern SEXP GWmodel_gwr_q(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP GWmodel_e_vec(SEXP, SEXP);
+extern SEXP GWmodel_gwr_mixed_trace(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP GWmodel_gwr_mixed_2(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
     {"GWmodel_AICc",              (DL_FUNC) &GWmodel_AICc,              4},
@@ -91,6 +103,18 @@ static const R_CallMethodDef CallEntries[] = {
     {"GWmodel_gw_local_r2",       (DL_FUNC) &GWmodel_gw_local_r2,       11},
     {"GWmodel_gw_reg_cuda",       (DL_FUNC) &GWmodel_gw_reg_cuda,       16},
     {"GWmodel_gw_cv_all_cuda",    (DL_FUNC) &GWmodel_gw_cv_all_cuda,    13},
+    {"GWmodel_BIC",               (DL_FUNC) &GWmodel_BIC,                4},
+    {"GWmodel_box_wt_vec",        (DL_FUNC) &GWmodel_box_wt_vec,         2},
+    {"GWmodel_box_wt_vec_ad",     (DL_FUNC) &GWmodel_box_wt_vec_ad,      2},
+    {"GWmodel_gau_wt_vec_ad",     (DL_FUNC) &GWmodel_gau_wt_vec_ad,      2},
+    {"GWmodel_bis_wt_vec_ad",     (DL_FUNC) &GWmodel_bis_wt_vec_ad,      2},
+    {"GWmodel_tri_wt_vec_ad",     (DL_FUNC) &GWmodel_tri_wt_vec_ad,      2},
+    {"GWmodel_exp_wt_vec_ad",     (DL_FUNC) &GWmodel_exp_wt_vec_ad,      2},
+    {"GWmodel_gw_reg_2",          (DL_FUNC) &GWmodel_gw_reg_2,           3},
+    {"GWmodel_gwr_q",             (DL_FUNC) &GWmodel_gwr_q,              6},
+    {"GWmodel_e_vec",             (DL_FUNC) &GWmodel_e_vec,              2},
+    {"GWmodel_gwr_mixed_trace",   (DL_FUNC) &GWmodel_gwr_mixed_trace,    7},
+    {"GWmodel_gwr_mixed_2",       (DL_FUNC) &GWmodel_gwr_mixed_2,        8},
     {NULL, NULL, 0}
 };
 

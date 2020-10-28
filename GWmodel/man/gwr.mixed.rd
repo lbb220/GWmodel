@@ -4,6 +4,11 @@
 \alias{gwr.mixed.trace}
 \alias{print.mgwr}
 \alias{gwr.q}
+\alias{gwr.mixed.2.fast}
+\alias{gwr.mixed.trace.fast}
+\alias{gwr_mixed_2}
+\alias{gwr_mixed_trace}
+\alias{gwr_q}
 \title{Mixed GWR}
 \description{
 This function implements mixed (semiparametric) GWR
@@ -11,7 +16,7 @@ This function implements mixed (semiparametric) GWR
 \usage{
 gwr.mixed(formula, data, regression.points, fixed.vars,
                      intercept.fixed=FALSE, bw, diagnostic=T, kernel="bisquare", 
-                     adaptive=FALSE, p=2, theta=0, longlat=F,dMat)
+                     adaptive=FALSE, p=2, theta=0, longlat=F,dMat, dMat.rp)
 }
 \arguments{
   \item{formula}{Regression model formula of a \link{formula} object }
@@ -37,6 +42,7 @@ gwr.mixed(formula, data, regression.points, fixed.vars,
   \item{theta}{an angle in radians to rotate the coordinate system, default is 0}
   \item{longlat}{if TRUE, great circle distances will be calculated}
   \item{dMat}{a pre-specified distance matrix, it can be calculated by the function \code{\link{gw.dist}}}
+  \item{dMat.rp}{a distance matrix when an individual set of regression points are adopted}
 }
 \value{
 A list of class \dQuote{mgwr}:
@@ -71,6 +77,8 @@ Nakaya T et al. (2011) GWR4.0, \url{http://gwr.nuim.ie/}.
 \note{
 For an alternative formulation of mixed GWR, please refer to GWR 4, which provides useful tools for automatic bandwidth selection.
 This windows-based software also implements generalised mixed GWR.
+
+The mixed GWR in the latest release of GWmodel (2.0-0) has been revised by Dr. Fiona H Evans from Centre for Digital Agriculture, Murdoch and Curtin Universities in terms of its computational efficiency.
 }
 \author{Binbin Lu \email{binbinlu@whu.edu.cn}}
 \keyword{multiscale GWR}

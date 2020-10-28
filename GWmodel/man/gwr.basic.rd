@@ -41,15 +41,17 @@ parallel.method=FALSE,parallel.arg=NULL)
   \item{cv}{if TRUE, cross-validation data will be calculated and returned in the output Spatial*DataFrame}
   \item{W.vect}{default NULL, if given it will be used to weight the distance weighting matrix}
   \item{x}{an object of class \dQuote{gwrm}, returned by the function \code{\link{gwr.basic}}}
-  \item{parallel.method}{Specified by `FALSE` for serial approach, 
-                         by `"omp"` for multi-thread approach implemented via OpenMP, 
-                         by `"cluster"` for multi-process approach implemented via `parallel` package,
-                         by `"cuda"` for parallel approach implemented via CUDA}
-  \item{parallel.arg}{Set the argument for parallel approach. 
-                      If `parallel.method` is `FALSE`, there is no need to set its value. 
-                      If `parallel.method` is `"omp"`, its value is used to set how many threads should be created (default by cores of *cores of CPU* - 1).
-                      If `parallel.method` is `"cluster"`, its value is used to set how many R session should be created (default by cores of *cores of CPU* - 1).
-                      If `parallel.method` is `"cuda"`, its value is used to set how many samples is included in one group during the calibration. This value should not be too big to avoid the overflow of GPU memory. }
+    \item{parallel.method}{ FALSE as default, and the calibration will be conducted traditionally via the serial technique, 
+                         "omp": multi-thread technique with the OpenMP API, 
+                         "cluster": multi-process technique with the \pkg{parallel} package,
+                         "cuda": parallel computing technique with CUDA}
+  \item{parallel.arg}{ if parallel.method is not FALSE, then set the argument by following:
+                      if parallel.method is "omp", parallel.arg refers to the number of threads used, and its default value is 
+                       the number of cores - 1;
+                      if parallel.method is "cluster", parallel.arg refers to the number of R sessions used, and its default value is 
+                       the number of cores - 1;
+                      if parallel.method is "cuda",  parallel.arg refers to the number of calibrations  included in each group, 
+                      but note a too large value may cause the overflow of GPU memory. }
   \item{...}{arguments passed through (unused)}
 }
 \value{
@@ -78,6 +80,34 @@ based on the geographically weighted regression model. Environment and Planning 
 Lu, B, Charlton, M, Harris, P, Fotheringham, AS (2014) Geographically weighted regression 
 with a non-Euclidean distance metric: a case study using hedonic house price data. 
 International Journal of Geographical Information Science 28(4): 660-681
+
+OpenMP: \url{https://www.openmp.org/}
+
+CUDA: \url{https://developer.nvidia.com/cuda-zone}
+
+R Core Team (2020). R: A language and environment for statistical computing. R Foundation for Statistical
+Computing, Vienna, Austria.  \url{https://www.R-project.org/}.
+}
+\note{
+Requirements of using CUDA for high-performence computation in GWR functions:
+
+To run GWR-CUDA (i.e. parallel.method is pecified as \dQuote{cuda}) with  
+\code{gwr.basic} , \code{bw.gwr} and \code{gwr.model.selection}, 
+the following conditions are required:
+
+1. There is at least one NVIDIA GPU supporting CUDA equipped on user's computer.
+
+2. CUDA (>10.2) are installed with the environment variable `CUDA_HOME` set properly. 
+
+3. The package should re-built from source. 
+   - For Linux user, `GWmodelCUDA` will be automatically built if CUDA toolkit could be detected 
+     by the complier. 
+   - For Windows user, `GWmodelCUDA.dll` and `GWmodelCUDA.lib` will be automatically downloaded;
+     however, we would recommend users to build the `GWmodelCUDA` library manually to avoid some potentially
+     unknown issues, and an `CMakeLists.txt` file is provided for this procedure.
+
+If any condition above is not satisfied, the GWR-CUDA will not work even though the \dQuote{parallel.method} is 
+specified as \dQuote{cuda}.
 }
 \author{Binbin Lu \email{binbinlu@whu.edu.cn}}
 \examples{
@@ -124,6 +154,55 @@ if(require("RColorBrewer"))
   main="GWR estimated coefficients for FLOORSZ with an adaptive bandwidth", 
   col.regions=mypalette, sp.layout=list(nsa,londonborough))}
 }
+\dontrun{
+  ############HP-GWR test code
+  simulate.data.generator <- function(data.length) {
+  x1 <- rnorm(data.length)
+  x2 <- rnorm(data.length)
+  x3 <- rnorm(data.length)
+  lon <- rnorm(data.length, mean = 533200, sd = 10000)
+  lat <- rnorm(data.length, mean = 159400, sd = 10000)
+  y <- x1 + 5 * x2 + 2.5 * x3 + rnorm(data.length)
+  simulate.data <- data.frame(y = y, x1 = x1, x2 = x2, x3 = x3, lon = lon, lat = lat)
+  coordinates(simulate.data) <- ~ lon + lat
+  names(simulate.data)
+  return(simulate.data)
+}
+simulate.data <- simulate.data.generator(10000)
+adaptive = TRUE
+
+## GWR (not parallelized)
+bw.CV.s <- bw.gwr(data = simulate.data, formula = y ~ x1 + x2 + x3, approach="CV", 
+                  kernel = "gaussian", adaptive = adaptive, parallel.method = FALSE)
+model.s <- gwr.model.selection(DeVar = "y", InDeVars = c("x1", "x2", "x3"), data = simulate.data, 
+                              bw = bw.CV.s, approach="AIC", kernel = "gaussian", adaptive = T, 
+                              parallel.method = FALSE)
+system.time(
+  betas.s <- gwr.basic(data = simulate.data, formula = y ~ x1 + x2 + x3, bw = bw.CV.s, 
+                       kernel = "gaussian", adaptive = TRUE)
+)
+
+## GWR-Omp
+bw.CV.omp <- bw.gwr(data = simulate.data, formula = y ~ x1 + x2 + x3, approach="CV", 
+                    kernel = "gaussian", adaptive = adaptive, parallel.method = "omp")
+model.omp <- gwr.model.selection(DeVar = "y", InDeVars = c("x1", "x2", "x3"), data = simulate.data, 
+                                bw = bw.CV.omp, approach="AIC", kernel = "gaussian", adaptive = T, 
+                                parallel.method = "omp")
+system.time(
+  betas.omp <- gwr.basic(data = simulate.data, formula = y ~ x1 + x2 + x3, bw = bw.CV.omp, 
+                        kernel = "gaussian", adaptive = T, parallel.method = "omp"))
+
+## GWR-CUDA
+bw.CV.cuda <- bw.gwr(data = simulate.data, formula = y ~ x1 + x2 + x3, approach="CV", 
+                     kernel = "gaussian", adaptive = adaptive, parallel.method = "cuda", 
+                     parallel.arg = 6*16)
+model.cuda <- gwr.model.selection(DeVar = "y", InDeVars = c("x1", "x2", "x3"), data = simulate.data, 
+                                 bw = bw.CV.cuda, approach="AIC", kernel = "gaussian", adaptive = T, 
+                                 parallel.method = "cuda", parallel.arg = 6*16)
+system.time(
+  betas.cuda <- gwr.basic(data = simulate.data, formula = y ~ x1 + x2 + x3, bw = bw.CV.cuda, 
+                          kernel = "gaussian", adaptive = T, parallel.method = "cuda", 
+                          parallel.arg = 6*8))
+}
 }
 \keyword{GWR}
-

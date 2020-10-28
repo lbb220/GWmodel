@@ -224,3 +224,16 @@ gw_local_r2 <- function(dp, dybar2, dyhat2, dm_given, dmat, p, theta, longlat, b
                        boxcar   = 4)
   .Call('GWmodel_gw_local_r2', PACKAGE = 'GWmodel', dp, dybar2, dyhat2, dm_given, dmat, p, theta, longlat, bw, kernel.id, adaptive)
 }
+
+gwr_q <- function(x,  y, dMat, bw, kernel, adaptive) 
+{
+   .Call('GWmodel_gwr_q', PACKAGE = 'GWmodel', x,  y, dMat, bw, kernel, adaptive)  
+}
+gwr_mixed_trace <- function(x1, x2, y, dMat, bw, kernel, adaptive) 
+{
+   .Call('GWmodel_gwr_mixed_trace', PACKAGE = 'GWmodel', x1, x2, y, dMat, bw, kernel, adaptive) 
+}
+gwr_mixed_2 <- function(x1, x2, y, dMat, dMat.rp, bw, kernel, adaptive) 
+{
+   .Call('GWmodel_gwr_mixed_2', PACKAGE = 'GWmodel', x1, x2, y, dMat, dMat.rp, bw, kernel, adaptive)  
+}
