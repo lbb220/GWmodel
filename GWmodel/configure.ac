@@ -61,15 +61,13 @@ else
 AC_SUBST(CUDA_LIBDIR,[""])
 fi
 
-RBIN=`PATH=/usr/bin:${PATH}; which R`
-R_HOME=`"${RBIN}" RHOME`
-
-if test -d "${R_HOME}"; then
-  echo "The R Home is ${R_HOME}"
-else
-  echo "could not determine R_HOME"
-  exit 1
+# find R home and set correct compiler + flags
+: ${R_HOME=`R RHOME`}
+if test -z "${R_HOME}"; then
+  AC_MSG_ERROR([cannot determine R_HOME. Make sure you use R CMD INSTALL!])
 fi
+AC_MSG_NOTICE([R_HOME: ${R_HOME}])
+RBIN="${R_HOME}/bin/R"
 
 R_INCL=`"${R_HOME}/bin/R" CMD config --cppflags`
 R_LIBS=`"${R_HOME}/bin/R" CMD config --ldflags`

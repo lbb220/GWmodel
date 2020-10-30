@@ -2825,15 +2825,14 @@ CUDA_LIBDIR=""
 
 fi
 
-RBIN=`PATH=/usr/bin:${PATH}; which R`
-R_HOME=`"${RBIN}" RHOME`
-
-if test -d "${R_HOME}"; then
-  echo "The R Home is \"${R_HOME}\""
-else
-  echo "Could not determine R_HOME"
-  exit 1
+# find R home and set correct compiler + flags
+: ${R_HOME=`R RHOME`}
+if test -z "${R_HOME}"; then
+  as_fn_error $? "cannot determine R_HOME. Make sure you use R CMD INSTALL!" "$LINENO" 5
 fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: R_HOME: ${R_HOME}" >&5
+$as_echo "$as_me: R_HOME: ${R_HOME}" >&6;}
+RBIN="${R_HOME}/bin/R"
 
 R_INCL=`"${R_HOME}/bin/R" CMD config --cppflags`
 R_LIBS=`"${R_HOME}/bin/R" CMD config --ldflags`
