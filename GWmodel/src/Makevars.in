@@ -5,9 +5,6 @@ R_LIBS = @R_LIBS@
 ENABLE_CUDA = @ENABLE_CUDA@
 GWmodel_CUDA_LIB_PATH=@GWmodel_CUDA_LIB_PATH@
 
-# R_PACKAGE_DIR=@R_PACKAGE_DIR@
-# R_PACKAGE_DIR_REAL=@R_PACKAGE_DIR_REAL@
-
 cu_sources = @cu_sources@
 cu_sharedlibs =@cu_sharedlibs@
 cpp_sources_cuda =  @cpp_sources_cuda@
@@ -56,9 +53,6 @@ all : ${TARGET_CUDA_LIB} GWmodel.so
 
 ${TARGET_CUDA_LIB}: ${OBJECTS_CUDA}
 	${SHLIB_LINK}  -o $@ $^ ${CUDA_LIBS} 
-	# cp $@ $(R_HOME)/lib$(R_ARCH)
-	# cp  -r $@ ${R_PACKAGE_DIR_REAL}/libs
-	# cp  -r $@ ${R_PACKAGE_DIR}/libs
 	mkdir -p ${GWmodel_CUDA_LIB_PATH}
 	cp $@ ${GWmodel_CUDA_LIB_PATH}
 	chown -R ${USER}:${USER} ${HOME}/.cache/GWmodel

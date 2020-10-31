@@ -120,19 +120,6 @@ NVCC="${CUDA_HOME}/bin/nvcc"
 AC_MSG_RESULT(building the cuda include path)
 CUDA_INCL="${CUDA_HOME}/include"
 
-if test -z `echo "${R_PACKAGE_DIR}" | egrep '00LOCK-.*?/00new'`; then
-	echo "You not use staged install"
-	AC_SUBST(R_PACKAGE_DIR_REAL,["$R_PACKAGE_DIR"])
-	AC_SUBST(R_PACKAGE_DIR)
-else
-	echo "You use staged install"
-	R_PACKAGE_DIR_REAL=`echo "${R_PACKAGE_DIR}" | sed -e 's|/00LOCK-.*/00new||gi'`
-	echo "Your real library is ${R_PACKAGE_DIR_REAL}"
-	AC_SUBST(R_PACKAGE_DIR_REAL)
-	AC_SUBST(R_PACKAGE_DIR)
-fi
-
-
 AC_SUBST(GWmodel_CUDA_LIB_PATH,["~/.cache/GWmodel"])
 
 AC_MSG_NOTICE([Building Makevars])
