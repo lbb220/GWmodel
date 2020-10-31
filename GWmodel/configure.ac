@@ -67,11 +67,6 @@ if test -z "${R_HOME}"; then
   AC_MSG_ERROR([cannot determine R_HOME. Make sure you use R CMD INSTALL!])
 fi
 AC_MSG_NOTICE([R_HOME: ${R_HOME}])
-RBIN="${R_HOME}/bin/R"
-
-R_INCL=`"${R_HOME}/bin/R" CMD config --cppflags`
-R_LIBS=`"${R_HOME}/bin/R" CMD config --ldflags`
-R_CPIC=`"${R_HOME}/bin/R" CMD config CPICFLAGS`
 
 ## look for Rscript, but use the one found via R_HOME to allow for multiple installations
 AC_DEFUN([AC_PROG_RSCRIPT], [AC_CHECK_PROG(RSCRIPT,Rscript,yes)])
