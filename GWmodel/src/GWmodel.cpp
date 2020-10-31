@@ -1163,8 +1163,8 @@ void printVec(vec v) {
   Rprintf("\n");
 }
 void printMat(mat m) {
-  int n = m.n_rows;
-  int p = m.n_cols;
+  uword n = m.n_rows;
+  uword p = m.n_cols;
   
   n = 10;
   if (m.n_rows < n) 
