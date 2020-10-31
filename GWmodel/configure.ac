@@ -127,7 +127,7 @@ if test -z `echo "${R_PACKAGE_DIR}" | egrep '00LOCK-.*?/00new'`; then
 else
 	echo "You use staged install"
 	R_PACKAGE_DIR_REAL=`echo "${R_PACKAGE_DIR}" | sed -e 's|/00LOCK-.*/00new||gi'`
-	echo "Your real libray is ${R_PACKAGE_DIR_REAL}"
+	echo "Your real library is ${R_PACKAGE_DIR_REAL}"
 	AC_SUBST(R_PACKAGE_DIR_REAL)
 	AC_SUBST(R_PACKAGE_DIR)
 fi
