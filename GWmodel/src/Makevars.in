@@ -36,13 +36,8 @@ CU_ARCH = \
 -gencode arch=compute_70,code=sm_70 \
 -gencode arch=compute_75,code=sm_75
 
-
-
-CXX=@CXX@
 NVCC=@NVCC@
 CUDA_INCL =  @CUDA_INCL@
-
-
 
 vpath %.cu ./GWmodelCUDA
 vpath %.cpp ./GWmodelCUDA
@@ -61,13 +56,11 @@ ${TARGET_CUDA_LIB}: ${OBJECTS_CUDA}
 GWmodel.so : ${TARGET_CUDA_LIB} ${OBJECTS_CUDA} ${OBJECTS}
 
 ${cpp_sharedlibs_cuda}: %.o: %.cpp 
-	$(CXX) $(CXX_ARGS)  -DCUDA_ARCH=52 $(R_INC) -I${CUDA_INCL} $< -c
 
 ${cu_sharedlibs}: %.o: %.cu
 	$(NVCC) $(CU_ARCH) $(CU_ARGS) $(CU_INCL) $< -c
 
 ${cpp_sharedlibs}: %.o :%.cpp
-	${CXX} $(CXX_ARGS)  $(CDEFS) $(R_INC) $< -c
 
 clean: 
 	rm -rf  *.o Makevars
