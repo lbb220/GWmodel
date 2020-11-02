@@ -673,6 +673,7 @@ RcppExport SEXP GWmodel_gw_reg_cuda(SEXP xSEXP, SEXP ySEXP, SEXP dpSEXP, SEXP rp
 #endif
 
 //GWmodel_gw_reg_all_omp
+#ifdef _OPENMP
 Rcpp::List gw_reg_all_omp(mat x, vec y, mat dp, bool rp_given, mat rp, bool dm_given, mat dmat, bool hatmatrix, 
                           double p, double theta, bool longlat, 
                           double bw, int kernel, bool adaptive,
@@ -704,6 +705,15 @@ RcppExport SEXP GWmodel_gw_reg_all_omp(SEXP xSEXP, SEXP ySEXP, SEXP dpSEXP, SEXP
   return __result;
   END_RCPP
 }
+#else
+RcppExport SEXP GWmodel_gw_reg_all_omp(SEXP xSEXP, SEXP ySEXP, SEXP dpSEXP, SEXP rp_givenSEXP, SEXP rpSEXP, SEXP dm_givenSEXP, SEXP dmatSEXP, SEXP hatmatrixSEXP, 
+                                       SEXP pSEXP, SEXP thetaSEXP, SEXP longlatSEXP, SEXP bwSEXP, SEXP kernelSEXP, SEXP adaptiveSEXP,
+                                       SEXP threadsSEXP, SEXP ngroupSEXP, SEXP igroupSEXP) {
+  BEGIN_RCPP
+  throw exception("Method NOT implemented");
+  END_RCPP
+}
+#endif
 
 //GWmodel_gw_cv_all
 double gw_cv_all(mat x, vec y, mat dp, bool dm_given, mat dmat, 
@@ -741,6 +751,7 @@ RcppExport SEXP GWmodel_gw_cv_all(SEXP xSEXP, SEXP ySEXP, SEXP dpSEXP, SEXP dm_g
 }
 
 //GWmodel_gw_cv_all
+#ifdef _OPENMP
 double gw_cv_all_omp(mat x, vec y, mat dp, bool dm_given, mat dmat, 
                      double p, double theta, bool longlat, 
                      double bw, int kernel, bool adaptive,
@@ -775,6 +786,15 @@ RcppExport SEXP GWmodel_gw_cv_all_omp(SEXP xSEXP, SEXP ySEXP, SEXP dpSEXP, SEXP 
   return __result;
   END_RCPP
 }
+#else
+RcppExport SEXP GWmodel_gw_cv_all_omp(SEXP xSEXP, SEXP ySEXP, SEXP dpSEXP, SEXP dm_givenSEXP, SEXP dmatSEXP, 
+                                      SEXP pSEXP, SEXP thetaSEXP, SEXP longlatSEXP, SEXP bwSEXP, SEXP kernelSEXP, SEXP adaptiveSEXP,
+                                      SEXP threadsSEXP, SEXP ngroupSEXP, SEXP igroupSEXP) {
+  BEGIN_RCPP
+  throw exception("Method NOT implemented");
+  END_RCPP
+}
+#endif
 
 #ifdef CUDA_ACCE
 RcppExport SEXP GWmodel_gw_cv_all_cuda(SEXP xSEXP, SEXP ySEXP, SEXP dpSEXP, SEXP dm_givenSEXP, SEXP dmatSEXP, 

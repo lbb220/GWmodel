@@ -61,19 +61,12 @@ else
 AC_SUBST(CUDA_LIBDIR,[""])
 fi
 
-RBIN=`PATH=/usr/bin:${PATH}; which R`
-R_HOME=`"${RBIN}" RHOME`
-
-if test -d "${R_HOME}"; then
-  echo "The R Home is ${R_HOME}"
-else
-  echo "could not determine R_HOME"
-  exit 1
+# find R home and set correct compiler + flags
+: ${R_HOME=`R RHOME`}
+if test -z "${R_HOME}"; then
+  AC_MSG_ERROR([cannot determine R_HOME. Make sure you use R CMD INSTALL!])
 fi
-
-R_INCL=`"${R_HOME}/bin/R" CMD config --cppflags`
-R_LIBS=`"${R_HOME}/bin/R" CMD config --ldflags`
-R_CPIC=`"${R_HOME}/bin/R" CMD config CPICFLAGS`
+AC_MSG_NOTICE([R_HOME: ${R_HOME}])
 
 ## look for Rscript, but use the one found via R_HOME to allow for multiple installations
 AC_DEFUN([AC_PROG_RSCRIPT], [AC_CHECK_PROG(RSCRIPT,Rscript,yes)])
@@ -121,19 +114,6 @@ AC_MSG_RESULT(building the nvcc command line)
 NVCC="${CUDA_HOME}/bin/nvcc"
 AC_MSG_RESULT(building the cuda include path)
 CUDA_INCL="${CUDA_HOME}/include"
-
-if test -z `echo "${R_PACKAGE_DIR}" | egrep '00LOCK-.*?/00new'`; then
-	echo "You not use staged install"
-	AC_SUBST(R_PACKAGE_DIR_REAL,["$R_PACKAGE_DIR"])
-	AC_SUBST(R_PACKAGE_DIR)
-else
-	echo "You use staged install"
-	R_PACKAGE_DIR_REAL=`echo "${R_PACKAGE_DIR}" | sed -e 's|/00LOCK-.*/00new||gi'`
-	echo "Your real libray is ${R_PACKAGE_DIR_REAL}"
-	AC_SUBST(R_PACKAGE_DIR_REAL)
-	AC_SUBST(R_PACKAGE_DIR)
-fi
-
 
 AC_SUBST(GWmodel_CUDA_LIB_PATH,["~/.cache/GWmodel"])
 
