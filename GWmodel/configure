@@ -586,9 +586,6 @@ LIBOBJS
 ENABLE_CUDA
 CUDA_INCL
 PKG_LIBS
-R_LIBS
-R_CPIC
-R_INCL
 NVCC
 CU_INCL
 GWmodel_CUDA_LIB_PATH
@@ -600,9 +597,6 @@ cpp_sharedlibs_cuda
 cpp_sources_cuda
 cu_sharedlibs
 cu_sources
-RCPP_ARMA_INCL
-RCPP_INCL
-RSCRIPT
 CUDA_LIBDIR
 CXXCPP
 OBJEXT
@@ -631,6 +625,7 @@ infodir
 docdir
 oldincludedir
 includedir
+runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -703,6 +698,7 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
+runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -955,6 +951,15 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
+  -runstatedir | --runstatedir | --runstatedi | --runstated \
+  | --runstate | --runstat | --runsta | --runst | --runs \
+  | --run | --ru | --r)
+    ac_prev=runstatedir ;;
+  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
+  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
+  | --run=* | --ru=* | --r=*)
+    runstatedir=$ac_optarg ;;
+
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1092,7 +1097,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir
+		libdir localedir mandir runstatedir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1245,6 +1250,7 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
+  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -2819,62 +2825,6 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: R_HOME: ${R_HOME}" >&5
 $as_echo "$as_me: R_HOME: ${R_HOME}" >&6;}
 
-## look for Rscript, but use the one found via R_HOME to allow for multiple installations
-
-# Extract the first word of "Rscript", so it can be a program name with args.
-set dummy Rscript; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_prog_RSCRIPT+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test -n "$RSCRIPT"; then
-  ac_cv_prog_RSCRIPT="$RSCRIPT" # Let the user override the test.
-else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_RSCRIPT="yes"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-fi
-fi
-RSCRIPT=$ac_cv_prog_RSCRIPT
-if test -n "$RSCRIPT"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $RSCRIPT" >&5
-$as_echo "$RSCRIPT" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-
-if test x"${RSCRIPT}" == x"yes" ; then
-    rcpp_incl=`${R_HOME}/bin/Rscript -e 'Rcpp:::CxxFlags()'`
-    rcpp_armadillo_incl=`${R_HOME}/bin/Rscript -e "RcppArmadillo:::CxxFlags()"`
-		RCPP_INCL="$rcpp_incl"
-
-		RCPP_ARMA_INCL="$rcpp_armadillo_incl"
-
-else
-    echo "
-		Your installation does not appear to have Rscript installed.
-
-		Please make sure that you have a working and complete R installation.
-		"
-    exit 1
-fi
-
 if test ${ENABLE_CUDA} -eq 1; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: You have CUDA environment and we will compile the cuda function for you" >&5
 $as_echo "You have CUDA environment and we will compile the cuda function for you" >&6; }
@@ -2912,9 +2862,6 @@ GWmodel_CUDA_LIB_PATH="~/.cache/GWmodel"
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: Building Makevars" >&5
 $as_echo "$as_me: Building Makevars" >&6;}
-
-
-
 
 
 

@@ -68,24 +68,6 @@ if test -z "${R_HOME}"; then
 fi
 AC_MSG_NOTICE([R_HOME: ${R_HOME}])
 
-## look for Rscript, but use the one found via R_HOME to allow for multiple installations
-AC_DEFUN([AC_PROG_RSCRIPT], [AC_CHECK_PROG(RSCRIPT,Rscript,yes)])
-AC_PROG_RSCRIPT
-
-if test x"${RSCRIPT}" == x"yes" ; then
-    rcpp_incl=`${R_HOME}/bin/Rscript -e 'Rcpp:::CxxFlags()'`
-    rcpp_armadillo_incl=`${R_HOME}/bin/Rscript -e "RcppArmadillo:::CxxFlags()"`
-		AC_SUBST(RCPP_INCL,["$rcpp_incl"])
-		AC_SUBST(RCPP_ARMA_INCL,["$rcpp_armadillo_incl"])
-else
-    echo "
-		Your installation does not appear to have Rscript installed.
-		
-		Please make sure that you have a working and complete R installation.
-		"
-    exit 1
-fi
-
 if test ${ENABLE_CUDA} -eq 1; then
     AC_MSG_RESULT(You have CUDA environment and we will compile the cuda function for you)
 	cu_sources="GWmodelKernel.cu"
@@ -120,9 +102,6 @@ AC_SUBST(GWmodel_CUDA_LIB_PATH,["~/.cache/GWmodel"])
 AC_MSG_NOTICE([Building Makevars])
 AC_SUBST(CU_INCL)
 AC_SUBST(NVCC)
-AC_SUBST(R_INCL)
-AC_SUBST(R_CPIC)
-AC_SUBST(R_LIBS)
 AC_SUBST(PKG_LIBS)
 AC_SUBST(CUDA_INCL)
 AC_SUBST(ENABLE_CUDA)

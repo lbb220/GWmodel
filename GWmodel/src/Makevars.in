@@ -1,7 +1,6 @@
 PKG_CXXFLAGS = -ARMA_64BIT_WORD=1 $(SHLIB_OPENMP_CXXFLAGS)
 CUDA_LIBS =   @CUDA_LIBS@
 PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) $(SHLIB_OPENMP_CXXFLAGS) @PKG_LIBS@
-R_LIBS = @R_LIBS@
 ENABLE_CUDA = @ENABLE_CUDA@
 GWmodel_CUDA_LIB_PATH=@GWmodel_CUDA_LIB_PATH@
 
@@ -22,11 +21,11 @@ c_sharedlibs = init.o
 
 OBJECTS = ${cpp_sharedlibs} ${c_sharedlibs}
 
-R_INC = -I./GWmodelCUDA @R_INCL@ @RCPP_INCL@ @RCPP_ARMA_INCL@ @CU_INCL@
+R_INC = -I./GWmodelCUDA
 CXX_ARGS =  @R_CPIC@ $(SHLIB_OPENMP_CXXFLAGS) -DNDEBUG ${CXX11FLAGS}
 
 CU_ARGS = -std=c++14 -Xcompiler -fPIC -Xcudafe --diag_suppress=boolean_controlling_expr_is_constant -DNDEBUG
-CU_INCL = @R_INCL@ @RCPP_INCL@
+CU_INCL = ${R_INCL}
 CU_ARCH = \
 -gencode arch=compute_35,code=sm_35 \
 -gencode arch=compute_37,code=sm_37 \
