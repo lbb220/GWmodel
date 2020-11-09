@@ -1,18 +1,17 @@
 Package: GWmodel
 Type: Package
-Version: 2.2-0
-Date: 2020-10-24
+Version: 2.2-1
+Date: 2020-11-09
 Title: Geographically-Weighted Models
 Depends: R (>= 3.0.0),maptools (>= 0.5-2), robustbase,sp (>
         1.4-0),Rcpp,spatialreg
 Imports: methods, grDevices, stats,graphics,spacetime,spdep,FNN
 LinkingTo: Rcpp, RcppArmadillo
 Suggests: mvoutlier, RColorBrewer, gstat,spData
-Description: Techniques from a particular branch of spatial statistics,termed geographically-weighted (GW) models. GW models suit situations when data are not described well by some global model, but where there are spatial regions where a suitably localised calibration provides a better description. 'GWmodel' includes functions to calibrate: GW summary statistics (Brunsdon et al. 2002)<doi: 10.1016/s0198-9715(01)00009-6>, GW principal components analysis (Harris et al. 2011)<doi: 10.1080/13658816.2011.554838>, GW discriminant analysis (Brunsdon et al. 2007)<doi: 10.1111/j.1538-4632.2007.00709.x> and various forms of GW regression (Brunsdon et al. 1996)<doi: 10.1111/j.1538-4632.1996.tb00936.x>; some of which are provided in basic and robust (outlier resistant) forms.
+Description: Techniques from a particular branch of spatial statistics,termed geographically-weighted (GW) models. GW models suit situations when data are not described well by some global model, but where there are spatial regions where a suitably localised calibration provides a better description. 'GWmodel' includes functions to calibrate: GW summary statistics (Brunsdon et al., 2002)<doi: 10.1016/s0198-9715(01)00009-6>, GW principal components analysis (Harris et al., 2011)<doi: 10.1080/13658816.2011.554838>, GW discriminant analysis (Brunsdon et al., 2007)<doi: 10.1111/j.1538-4632.2007.00709.x> and various forms of GW regression (Brunsdon et al., 1996)<doi: 10.1111/j.1538-4632.1996.tb00936.x>; some of which are provided in basic and robust (outlier resistant) forms.
 Author: Binbin Lu[aut], Paul Harris[aut], Martin Charlton[aut], Chris Brunsdon[aut], Tomoki Nakaya[aut], Daisuke Murakami[aut],Isabella Gollini[ctb], Yigong Hu[ctb], Fiona H Evans[ctb]
 Maintainer: Binbin Lu <binbinlu@whu.edu.cn>
 License: GPL (>= 2)
 Repository: CRAN
 URL: http://gwr.nuim.ie/
 NeedsCompilation: yes
-Packaged: 2020-10-25 10:10:45 UTC; Lenovo
