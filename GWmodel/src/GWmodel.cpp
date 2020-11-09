@@ -1171,8 +1171,8 @@ void printMat(mat m) {
   {
      n = m.n_rows;
   } 
-  for (int i=0; i<n; i++) {
-    for (int j=0; j<p; j++) {
+  for (uword i=0; i<n; i++) {
+    for (uword j=0; j<p; j++) {
       Rprintf("%f ", m(i, j));
     }
     Rprintf("\n");
