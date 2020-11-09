@@ -1148,7 +1148,7 @@ vec gw_local_r2(mat dp, vec dybar2, vec dyhat2, bool dm_given, mat dmat, double 
 double BIC(vec y, mat x, mat beta, vec s_hat)
 {
   double ss = rss(y, x, beta);
-  int n = x.n_rows;
+  double n = (double)x.n_rows;
   double BIC = n * log(ss / n) + n * log(2 * datum::pi) + log(n) * s_hat(0);
   return BIC;
 }
