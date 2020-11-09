@@ -8,65 +8,59 @@ AC_PROG_CXX
 
 ENABLE_CUDA=0
 
-AC_MSG_CHECKING("Checking environment variable CUDA_HOME")
-if test -z "${CUDA_HOME}"; then
-    CUDA_HOME=`find /usr/local/ -maxdepth 1 -type d -name "cuda*" | sort -V | tail -1`
-    AC_MSG_RESULT("CUDA_HOME not set; using highest version found ${CUDA_HOME}")
-else
-    AC_MSG_RESULT("using CUDA_HOME=${CUDA_HOME}")
-fi
-
-AC_CHECK_FILE([${CUDA_HOME}/bin/nvcc], [HAS_NVCC="yes"])
-if test -z "${HAS_NVCC}"; then
-    AC_MSG_RESULT("NVCC not found")
-else
-    AC_MSG_RESULT("NVCC found")
-	ENABLE_CUDA=1
-fi
-
-AC_ARG_ENABLE([cuda], [AS_HELP_STRING([--enable-cuda],[install cuda (default yes)])],
-[ case "${enableval}" in
-  yes) ENABLE_CUDA=1 ;;
-  no)  ENABLE_CUDA=0 ;;
-  *)   AC_MSG_ERROR(bad value ${enableval} for --enable-cuda) ;;
-esac]
-)
-
-if test -z "${CUDA_HOME}"; then
-	if test ${ENABLE_CUDA} -eq 1; then
-		echo "
-			It seams that you don't have CUDA environment and the --enable-cuda is yes
-
-			Please make sure your cuda environment is under the /usr/local directory
-
-			If you don't  want to install cuda function, please set `--enable-cuda=no`
-		"
-		exit 1
-	fi
-fi
-
 if test ${ENABLE_CUDA} -eq 1; then
-	AC_MSG_CHECKING("whether this is the 64 bit linux version of CUDA")
-	AC_CHECK_FILE([${CUDA_HOME}/lib64/libcudart.so], [BIT64="yes"])
-	if test -z "${BIT64}"; then
-			AC_MSG_RESULT("no -- using ${CUDA_HOME}/lib for CUDA libs")
-			cu_libdir="${CUDA_HOME}/lib"
-			AC_SUBST(CUDA_LIBDIR,["$cu_libdir"])
+	AC_MSG_CHECKING("Checking environment variable CUDA_HOME")
+	if test -z "${CUDA_HOME}"; then
+		AC_MSG_RESULT("CUDA_HOME not set, stop finding nvcc")
 	else
-			AC_MSG_RESULT("yes -- using ${CUDA_HOME}/lib64 for CUDA libs")
-			cu_libdir="${CUDA_HOME}/lib64"
-			AC_SUBST(CUDA_LIBDIR,["$cu_libdir"])
+		AC_MSG_RESULT("using CUDA_HOME=${CUDA_HOME}")
 	fi
-else
-AC_SUBST(CUDA_LIBDIR,[""])
-fi
 
-# find R home and set correct compiler + flags
-: ${R_HOME=`R RHOME`}
-if test -z "${R_HOME}"; then
-  AC_MSG_ERROR([cannot determine R_HOME. Make sure you use R CMD INSTALL!])
+	AC_CHECK_FILE([${CUDA_HOME}/bin/nvcc], [HAS_NVCC="yes"])
+	if test -z "${HAS_NVCC}"; then
+		AC_MSG_RESULT("NVCC not found")
+	else
+		AC_MSG_RESULT("NVCC found")
+		ENABLE_CUDA=1
+	fi
+
+	AC_ARG_ENABLE([cuda], [AS_HELP_STRING([--enable-cuda],[install cuda (default yes)])],
+	[ case "${enableval}" in
+	yes) ENABLE_CUDA=1 ;;
+	no)  ENABLE_CUDA=0 ;;
+	*)   AC_MSG_ERROR(bad value ${enableval} for --enable-cuda) ;;
+	esac]
+	)
+
+	if test -z "${CUDA_HOME}"; then
+		if test ${ENABLE_CUDA} -eq 1; then
+			echo "
+				It seams that you don't have CUDA environment and the --enable-cuda is yes
+
+				Please make sure your cuda environment is under the /usr/local directory
+
+				If you don't  want to install cuda function, please set `--enable-cuda=no`
+			"
+			exit 1
+		fi
+	fi
+
+	if test ${ENABLE_CUDA} -eq 1; then
+		AC_MSG_CHECKING("whether this is the 64 bit linux version of CUDA")
+		AC_CHECK_FILE([${CUDA_HOME}/lib64/libcudart.so], [BIT64="yes"])
+		if test -z "${BIT64}"; then
+				AC_MSG_RESULT("no -- using ${CUDA_HOME}/lib for CUDA libs")
+				cu_libdir="${CUDA_HOME}/lib"
+				AC_SUBST(CUDA_LIBDIR,["$cu_libdir"])
+		else
+				AC_MSG_RESULT("yes -- using ${CUDA_HOME}/lib64 for CUDA libs")
+				cu_libdir="${CUDA_HOME}/lib64"
+				AC_SUBST(CUDA_LIBDIR,["$cu_libdir"])
+		fi
+	else
+	AC_SUBST(CUDA_LIBDIR,[""])
+	fi
 fi
-AC_MSG_NOTICE([R_HOME: ${R_HOME}])
 
 if test ${ENABLE_CUDA} -eq 1; then
     AC_MSG_RESULT(You have CUDA environment and we will compile the cuda function for you)
