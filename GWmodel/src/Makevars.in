@@ -55,9 +55,10 @@ ${TARGET_CUDA_LIB}: ${OBJECTS_CUDA}
 GWmodel.so : ${TARGET_CUDA_LIB} ${OBJECTS_CUDA} ${OBJECTS}
 
 ${cpp_sharedlibs_cuda}: %.o: %.cpp 
+	$(CXX) $(SHLIB_OPENMP_CXXFLAGS) -DNDEBUG ${CXX11FLAGS} -DCUDA_ARCH=52 $(R_INC) -I${CUDA_INCL} -fPIC $< -c
 
 ${cu_sharedlibs}: %.o: %.cu
-	$(NVCC) $(CU_ARCH) $(CU_ARGS) $(CU_INCL) $< -c
+	$(NVCC) $(CU_ARCH) $(CU_ARGS) $(CU_INCL) -I${CUDA_INCL} $< -c
 
 ${cpp_sharedlibs}: %.o :%.cpp
 

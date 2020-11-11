@@ -8,6 +8,14 @@ AC_PROG_CXX
 
 ENABLE_CUDA=0
 
+
+AC_ARG_ENABLE([cuda], [AS_HELP_STRING([--enable-cuda],[install cuda (default no)])],
+[ case "${enableval}" in
+	yes) ENABLE_CUDA=1 ;;
+	no)  ENABLE_CUDA=0 ;;
+	*)   AC_MSG_ERROR(bad value ${enableval} for --enable-cuda) ;;
+esac])
+
 if test ${ENABLE_CUDA} -eq 1; then
 	AC_MSG_CHECKING("Checking environment variable CUDA_HOME")
 	if test -z "${CUDA_HOME}"; then
@@ -15,22 +23,6 @@ if test ${ENABLE_CUDA} -eq 1; then
 	else
 		AC_MSG_RESULT("using CUDA_HOME=${CUDA_HOME}")
 	fi
-
-	AC_CHECK_FILE([${CUDA_HOME}/bin/nvcc], [HAS_NVCC="yes"])
-	if test -z "${HAS_NVCC}"; then
-		AC_MSG_RESULT("NVCC not found")
-	else
-		AC_MSG_RESULT("NVCC found")
-		ENABLE_CUDA=1
-	fi
-
-	AC_ARG_ENABLE([cuda], [AS_HELP_STRING([--enable-cuda],[install cuda (default yes)])],
-	[ case "${enableval}" in
-	yes) ENABLE_CUDA=1 ;;
-	no)  ENABLE_CUDA=0 ;;
-	*)   AC_MSG_ERROR(bad value ${enableval} for --enable-cuda) ;;
-	esac]
-	)
 
 	if test -z "${CUDA_HOME}"; then
 		if test ${ENABLE_CUDA} -eq 1; then
