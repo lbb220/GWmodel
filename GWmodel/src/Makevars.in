@@ -1,4 +1,6 @@
-PKG_CXXFLAGS = -DARMA_64BIT_WORD=1 $(SHLIB_OPENMP_CXXFLAGS)
+CDEFS =  @CDEFS@
+R_INC = -I./GWmodelCUDA
+PKG_CXXFLAGS = -DARMA_64BIT_WORD=1 $(SHLIB_OPENMP_CXXFLAGS) $(CDEFS) $(R_INC)
 CUDA_LIBS =   @CUDA_LIBS@
 PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) $(SHLIB_OPENMP_CXXFLAGS) @PKG_LIBS@
 ENABLE_CUDA = @ENABLE_CUDA@
@@ -10,7 +12,7 @@ cpp_sources_cuda =  @cpp_sources_cuda@
 cpp_sharedlibs_cuda =  @cpp_sharedlibs_cuda@
 OBJECTS_CUDA =  @OBJECTS_CUDA@
 
-CDEFS =  @CDEFS@
+#CDEFS =  @CDEFS@
 TARGET_CUDA_LIB =@TARGET_CUDA_LIB@
 
 cpp_sources = RcppExports.cpp GWmodel.cpp
@@ -21,7 +23,7 @@ c_sharedlibs = init.o
 
 OBJECTS = ${cpp_sharedlibs} ${c_sharedlibs}
 
-R_INC = -I./GWmodelCUDA
+#R_INC = -I./GWmodelCUDA
 CXX_ARGS =  @R_CPIC@ $(SHLIB_OPENMP_CXXFLAGS) -DNDEBUG ${CXX11FLAGS}
 
 CU_ARGS = -std=c++14 -Xcompiler -fPIC -Xcudafe --diag_suppress=boolean_controlling_expr_is_constant -DNDEBUG
@@ -55,9 +57,10 @@ ${TARGET_CUDA_LIB}: ${OBJECTS_CUDA}
 GWmodel.so : ${TARGET_CUDA_LIB} ${OBJECTS_CUDA} ${OBJECTS}
 
 ${cpp_sharedlibs_cuda}: %.o: %.cpp 
+	$(CXX) $(SHLIB_OPENMP_CXXFLAGS) -DNDEBUG ${CXX11FLAGS} -DCUDA_ARCH=52 $(R_INC) -I${CUDA_INCL} -fPIC $< -c
 
 ${cu_sharedlibs}: %.o: %.cu
-	$(NVCC) $(CU_ARCH) $(CU_ARGS) $(CU_INCL) $< -c
+	$(NVCC) $(CU_ARCH) $(CU_ARGS) $(CU_INCL) -I${CUDA_INCL} $< -c
 
 ${cpp_sharedlibs}: %.o :%.cpp
 
