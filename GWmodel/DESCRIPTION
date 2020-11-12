@@ -15,3 +15,4 @@ License: GPL (>= 2)
 Repository: CRAN
 URL: http://gwr.nuim.ie/
 NeedsCompilation: yes
+SystemRequirements: GNU make
