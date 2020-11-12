@@ -1,6 +1,6 @@
 Package: GWmodel
 Type: Package
-Version: 2.2-1
+Version: 2.2-2
 Date: 2020-11-09
 Title: Geographically-Weighted Models
 Depends: R (>= 3.0.0),maptools (>= 0.5-2), robustbase,sp (>
