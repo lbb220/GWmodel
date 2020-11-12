@@ -69,17 +69,14 @@ Geo-spatial Information Science 17(2): 85-101
 \author{Binbin Lu \email{binbinlu@whu.edu.cn}}
 \examples{
 \dontrun{
- require(tmap)
- data(ge2015)
- data(cty_eng)
- ge2015 <- ge2015[ge2015$WINNER %in% c("Con","Lab","LD"),]
- dMat <- gw.dist(coordinates(ge2015))
- bw <- bw.gwda(WINNER~Age65over+OwnOcc+NoQual+Unemp+NonWhite+LoneParHH,data=ge2015,
+ data(USelect)
+ dMat <- gw.dist(coordinates(USelect2004))
+ bw <- bw.gwda(winner~unemploy+pctcoled+PEROVER65+pcturban+WHITE,data=USelect2004,
  adaptive=TRUE,dMat=dMat)
- ge.gwda <- gwda(WINNER~Age65over+OwnOcc+NoQual+Unemp+NonWhite+LoneParHH,data=ge2015,
+ ge.gwda <- gwda(winner~unemploy+pctcoled+PEROVER65+pcturban+WHITE,data=USelect2004,
  bw=bw,adaptive=TRUE,dMat=dMat)
- table(ge2015$WINNER,ge.gwda$SDF$group.predicted)
- tm_shape(ge.gwda$SDF)+tm_fill("entropy")+tm_shape(cty_eng)+tm_borders()
+ table(USelect2004$winner,ge.gwda$SDF$group.predicted)
+ spplot(ge.gwda$SDF, "entropy")
  }
 }
 \keyword{GWDA}
