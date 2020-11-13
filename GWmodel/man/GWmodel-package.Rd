@@ -20,14 +20,14 @@ to be adopted for efficient calibrations.
 Package: \tab GWmodel\cr
 Type: \tab Package\cr
 Version: \tab 2.2-2\cr
-Date: \tab 2020-11-09\cr
+Date: \tab 2020-11-13\cr
 License: \tab GPL (>=2)\cr
 LazyLoad: \tab yes\cr
 }
 
 }
 \author{
-Binbin Lu, Paul Harris, Martin Charlton, Chris Brunsdon, Tomoki Nakaya, Daisuke Murakami,Isabella Gollini
+Binbin Lu, Paul Harris, Martin Charlton, Chris Brunsdon, Tomoki Nakaya, Daisuke Murakami,Isabella Gollini[ctb], Yigong Hu[ctb], Fiona H Evans[ctb]
 
 Maintainer: Binbin Lu <binbinlu@whu.edu.cn>
 }
