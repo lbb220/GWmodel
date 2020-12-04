@@ -105,8 +105,8 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
   dp.n<-nrow(data)
   betas <- matrix(0, nrow=rp.n, ncol=var.n)
   if (hatmatrix) {
-    betas.SE <-matrix(nrow=rp.n, ncol=var.n)
-    betas.TV <-matrix(nrow=rp.n, ncol=var.n)
+    betas.SE <-matrix(0, nrow=rp.n, ncol=var.n)
+    betas.TV <-matrix(0, nrow=rp.n, ncol=var.n)
   }
   idx1 <- match("(Intercept)", colnames(x))
   if(!is.na(idx1))
