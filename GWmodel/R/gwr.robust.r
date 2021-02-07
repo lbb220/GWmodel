@@ -1,4 +1,5 @@
-gwr.robust<-function(formula, data, bw,filtered=FALSE, kernel = "bisquare", adaptive = FALSE, p = 2, theta = 0, longlat = F, dMat, F123.test = F,maxiter=20,cut.filter= 3,cut1=2,cut2=3,delta=1.0e-5) 
+gwr.robust<-function(formula, data, bw,filtered=FALSE, kernel = "bisquare", adaptive = FALSE, p = 2, theta = 0, longlat = F, dMat, F123.test = F,
+                     maxiter=20,cut.filter= 3,cut1=2,cut2=3,delta=1.0e-5) 
     {    	   
     	W.vect<-NULL 	
     	res1<- gwr.basic(formula=formula, data=data, bw=bw, kernel=kernel, adaptive=adaptive, p=p, theta=theta, longlat=longlat, dMat=dMat, F123.test=F123.test, cv=T,W.vect=W.vect)

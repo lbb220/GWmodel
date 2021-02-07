@@ -1,21 +1,8 @@
 \name{gw.weight}
 \alias{gw.weight}
-\alias{gw.weight.bis}
-\alias{gw.weight.bis.ad}
-\alias{gw.weight.box}
-\alias{gw.weight.box.ad}
-\alias{gw.weight.gau}
-\alias{gw.weight.gau.ad}
-\alias{gw.weight.tri}
-\alias{gw.weight.tri.ad}
-\alias{bisq_wt_vec}
-\alias{bisq_wt_mat}
-\alias{gauss_wt_vec}
-\alias{gauss_wt_mat}
-\alias{tri_wt_vec}
-\alias{tri_wt_mat}
-\alias{exp_wt_vec}
-\alias{exp_wt_mat}
+\alias{gw_weight_vec}
+\alias{gw_weight_mat}
+\alias{gw_weight}
 \title{Weight matrix calculation}
 \description{
   Calculate a weight vector(matrix) from a distance vector(matrix).

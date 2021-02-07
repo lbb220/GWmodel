@@ -1,18 +1,6 @@
 \name{gw.dist}
 \alias{gw.dist}
-\alias{coordinate_rotate}
-\alias{eu_dist_mat}
-\alias{eu_dist_smat}
-\alias{eu_dist_vec}
-\alias{mk_dist_mat}
-\alias{mk_dist_smat}
-\alias{mk_dist_vec}
-\alias{cd_dist_mat}
-\alias{cd_dist_smat}
-\alias{cd_dist_vec}
-\alias{md_dist_mat}
-\alias{md_dist_smat}
-\alias{md_dist_vec}
+\alias{gw_dist}
 \title{Distance matrix calculation}
 \description{
   Calculate a distance vector(matrix) between any GW model calibration point(s) and the data points.

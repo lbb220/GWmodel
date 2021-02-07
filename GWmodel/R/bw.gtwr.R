@@ -1,7 +1,8 @@
 
 ###Select the bandwidth for GTWR
 # Optimize the bandwidth only via the CV or AICc approach
-bw.gtwr<-function(formula, data, obs.tv, approach="CV",kernel="bisquare",adaptive=FALSE, p=2, theta=0, longlat=F,lamda=0.05,t.units = "auto",ksi=0, st.dMat,verbose=T)
+bw.gtwr<-function(formula, data, obs.tv, approach="CV",kernel="bisquare",adaptive=FALSE, p=2, theta=0, 
+                  longlat=F,lamda=0.05,t.units = "auto",ksi=0, st.dMat,verbose=T)
 {
     ##Data points{
   if (is(data, "Spatial"))
@@ -24,7 +25,7 @@ bw.gtwr<-function(formula, data, obs.tv, approach="CV",kernel="bisquare",adaptiv
   mt <- attr(mf, "terms")
   y <- model.extract(mf, "response")
   x <- model.matrix(mt, mf)
-  dp.n<-nrow(data)
+  dp.n<-as.numeric(nrow(data))
   
   if(missing(obs.tv))
   {

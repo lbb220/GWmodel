@@ -2,6 +2,12 @@
 \alias{bw.gwr}
 \alias{gwr.aic}
 \alias{gold}
+\alias{AICc_rss1}
+\alias{BIC}
+\alias{e_vec}
+\alias{fitted}
+\alias{gw_cv_all}
+\alias{gw_cv_all_cuda}
 \title{Bandwidth selection for basic GWR}
 \description{
   A function for automatic bandwidth selection to calibrate a basic GWR model

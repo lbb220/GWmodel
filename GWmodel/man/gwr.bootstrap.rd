@@ -22,8 +22,11 @@ ERR, SMA and LAG models.  Global test statistic results are found, as well local
 observation-specific test results that can be mapped. 
 }
 \usage{
-gwr.bootstrap(formula, data, kernel="bisquare",approach="AIC", R=99,k.nearneigh=4,
-              adaptive=FALSE, p=2, theta=0, longlat=FALSE,dMat,verbose=FALSE)
+gwr.bootstrap(formula, data, kernel = "bisquare", approach = "AIC",
+                 R = 99, k.nearneigh = 4, adaptive = FALSE, p = 2,
+                 theta = 0, longlat = FALSE, dMat, verbose = FALSE,
+                 parallel.method = FALSE, parallel.arg = NULL)
+
 \method{print}{gwrbsm}(x, \dots)
 }
 
@@ -51,6 +54,17 @@ gwr.bootstrap(formula, data, kernel="bisquare",approach="AIC", R=99,k.nearneigh=
   \item{dMat}{a pre-specified distance matrix, it can be calculated by the function \code{\link{gw.dist}}}
   \item{verbose}{if TRUE and bandwidth selection is undertaken, the bandwidth searches are reported} 
   \item{x}{an object of class \dQuote{gwrbsm}, returned by the function \link{gwr.bootstrap}}
+  \item{parallel.method}{ FALSE as default, and the calibration will be conducted traditionally via the serial technique, 
+                         "omp": multi-thread technique with the OpenMP API, 
+                         "cluster": multi-process technique with the \pkg{parallel} package,
+                         "cuda": parallel computing technique with CUDA}
+  \item{parallel.arg}{ if parallel.method is not FALSE, then set the argument by following:
+                      if parallel.method is "omp", parallel.arg refers to the number of threads used, and its default value is 
+                       the number of cores - 1;
+                      if parallel.method is "cluster", parallel.arg refers to the number of R sessions used, and its default value is 
+                       the number of cores - 1;
+                      if parallel.method is "cuda",  parallel.arg refers to the number of calibrations  included in each group, 
+                      but note a too large value may cause the overflow of GPU memory. }
   \item{...}{arguments passed through (unused)} 
 }
 \value{

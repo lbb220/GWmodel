@@ -18,10 +18,6 @@ gwr.mixed <- function(formula, data, regression.points, fixed.vars,intercept.fix
      hatmatrix <- T
   else 
      hatmatrix <- F
-  
-  if (missing(dMat.rp)) {
-    dMat.rp <- dMat
-  }
   #####Check the given data frame and regression points
   #####Regression points
   if (missing(regression.points))
@@ -69,16 +65,19 @@ gwr.mixed <- function(formula, data, regression.points, fixed.vars,intercept.fix
   else
   {
     DM.given<-T
-    DM1.given<-T
     dim.dMat<-dim(dMat)
     if (dim.dMat[1]!=dp.n||dim.dMat[2]!=dp.n)
        stop("Dimensions of dMat are not correct")
-  }
-  if(!missing(dMat.rp))
-  {
-    dim.dMat.rp <- dim(dMat.rp)
+    if (missing(dMat.rp)) {
+    dMat.rp <- dMat
+    }
+    else
+    {
+       dim.dMat.rp <- dim(dMat.rp)
     if (dim.dMat.rp[1]!=dp.n||dim.dMat.rp[2]!=rp.n)
-        stop("Dimensions of dMat are not correct")
+        stop("Dimensions of dMat.rp are not correct")
+    }
+    DM1.given<-T 
   }
   ####################
   ######Extract the data frame
@@ -119,7 +118,9 @@ gwr.mixed <- function(formula, data, regression.points, fixed.vars,intercept.fix
                         kernel=kernel, dMat=dMat, dMat.rp=dMat.rp)                     
   res <- list()
    res$local <- model$local 
-   res$global <- apply(model$global,2,mean,na.rm=T) 
+   res$global <- as.matrix(apply(model$global,2,mean,na.rm=T), 1, length(idx.fixed))
+   colnames(res$local) <- colnames(x1)
+   colnames(res$global) <- colnames(x2)
    mgwr.df <- data.frame(model$local, model$global)
    colnames(mgwr.df) <- c(paste(colnames(x1), "L", sep="_"), paste(colnames(x2), "F", sep="_"))
    rownames(rp.locat)<-rownames(mgwr.df)
@@ -302,7 +303,7 @@ print.mgwr <- function(x, ...)
   
   cat("\n   *********************Model calibration information*********************\n")
   gwr.names <- colnames(x$local)
-   global.names <- names(x$global)
+   global.names <- colnames(x$global)
    cat("   Mixed GWR model with local variables :", gwr.names, "\n")
    cat("   Global variables :", global.names, "\n")
 	cat("   Kernel function:", x$GW.arguments$kernel, "\n")
@@ -367,26 +368,14 @@ print.mgwr <- function(x, ...)
 gwr.q <- function(x, y, loc, out.loc=loc, adaptive=F, bw=sqrt(var(loc[,1])+var(loc[,2])),
                   kernel, p, theta, longlat,dMat, wt2=rep(1,nrow(loc)))
 {
-  if (missing(dMat))
-     DM.given <- F
-  else
-     DM.given <- T
   if(missing(out.loc))
     rp.n <- nrow(loc)
   else
     rp.n <- nrow(out.loc)
+  if (missing(dMat))
+     dMat <- gw.dist(loc, out.loc, p, theta, longlat)
   var.n <- ncol(x)
-  betas <- matrix(nrow=rp.n, ncol=var.n)
-  for (i in 1:rp.n)
-  {
-    if(DM.given)
-       dist.vi <- dMat[,i]
-    else
-       dist.vi <- gw.dist(loc, out.loc, focus=i, p, theta, longlat)
-    W.i<-gw.weight(dist.vi,bw,kernel,adaptive)
-    gw.resi<-gw_reg(x,y,as.vector(W.i*wt2),hatmatrix=F,i)
-    betas[i,]<-gw.resi[[1]]
-  }
+  betas <- gwr_q(x,  y, dMat, bw, kernel, adaptive)
   colnames(betas) <- colnames(x)
   betas
 }

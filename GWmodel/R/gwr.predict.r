@@ -127,7 +127,7 @@ gwr.predict<-function(formula, data, predictdata, bw, kernel="bisquare",adaptive
     if (!pd.given)
       W.i[i] <- 0 
     wt[,i] <- W.i
-    gw.resi<-gw.reg1(x,y,W.i,i)
+    gw.resi<-gw_reg_1(x,y,W.i)
     betas1[i,]<-gw.resi[[1]]
     xtxinv[i,,] <-gw.resi[[2]]
   }
@@ -215,17 +215,6 @@ gwr.predict<-function(formula, data, predictdata, bw, kernel="bisquare",adaptive
   class(res) <-"gwrm.pred"
   invisible(res)
 }
-
-gw.reg1<-function(X,Y,W.i,focus)
-###GWR for prediction
-{
-    xtxinv <- solve(t(X*W.i)%*%X)
-    xty <- t(X*W.i)
-    betai<-xtxinv%*%xty%*%Y
-    res<-list(betai,xtxinv,xty) 
-    res    
-}
-
 ############################Layout function for outputing the GWR results
 ##Author: BL	
 print.gwrm.pred<-function(x, ...)
