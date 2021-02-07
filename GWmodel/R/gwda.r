@@ -117,7 +117,6 @@ gwda <- function(formula, data, predict.data,validation = T, COV.gw=T,
         temp.i <- as.numeric(temp[,icol])
         temp[,icol] <- exp(-temp.i)
       }
-    print(temp)
     probs <- sweep(temp[,1:NP],1,rowSums(temp[,1:NP]),"/")
     pmax  <- apply(probs,1,max)
     
@@ -135,7 +134,6 @@ gwda <- function(formula, data, predict.data,validation = T, COV.gw=T,
     }
    
     ent.max <- shannon.entropy(p=rep(1/NP,NP))
-    print(temp)
     entropy <- apply(probs,1,shannon.entropy)/ent.max
     
     colnames(probs) <- gsub("logp","p",colnames(res.df)[1:NP])

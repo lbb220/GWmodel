@@ -110,6 +110,7 @@ gtwr<- function(formula, data, regression.points, obs.tv, reg.tv, st.bw, kernel=
 #    if (class(obs.tv)=="yearqtr")
 #      t.units <- "quarters"
 #  }
+  ###
   ####################
   ######Extract the data frame
   ####Refer to the function lm

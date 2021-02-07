@@ -39,7 +39,9 @@
 #Belsey-Kuh-Welsh condition number
 #Variance Inflation Factors
 #Variance decomposition proportions
-gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", adaptive=FALSE, p=2, theta=0, longlat=F, dMat, F123.test=F, cv=F, W.vect=NULL, parallel.method = FALSE, parallel.arg = NULL)
+gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", adaptive=FALSE, p=2, theta=0, 
+                      longlat=F, dMat, F123.test=F, cv=F, W.vect=NULL, parallel.method = FALSE, 
+					  parallel.arg = NULL)
 {
   ##Record the start time
   timings <- list()
@@ -151,7 +153,9 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
   # W <- matrix(nrow = dp.n, ncol = rp.n)
   s_hat <- c(0.0, 0.0)
   q.diag <- matrix(0, 1, dp.n)
-  if (parallel.method == F) {
+  ##No parallel method applied
+  if (parallel.method == F) 
+  {
     reg.result <- gw_reg_all(x, y, dp.locat, rp.given, rp.locat, DM.given, dMat, hatmatrix, p, theta, longlat, bw, kernel, adaptive)
     betas = betas + reg.result$betas
     if (hatmatrix) {
@@ -159,7 +163,9 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
       s_hat = reg.result$s_hat
       q.diag = reg.result$q.diag
     }
-  } else if (parallel.method == "cuda") {
+  } 
+  else if (parallel.method == "cuda") 
+  {
     if (missing(parallel.arg)) {
       groupl <- 16
     } else {
@@ -176,7 +182,8 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
         q.diag = reg.result$q.diag
       }
     }
-  } else if (parallel.method == "omp") {
+  } 
+  else if (parallel.method == "omp") {
     if (missing(parallel.arg)) { threads <- 0 } else {
       threads <- ifelse(is(parallel.arg, "numeric"), parallel.arg, 0)
     }
@@ -187,7 +194,8 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
       s_hat = reg.result$s_hat
       q.diag = reg.result$q.diag
     }
-  } else if (parallel.method == "cluster") {
+  } 
+  else if (parallel.method == "cluster") {
     if (missing(parallel.arg)) {
       parallel.arg.n <- max(detectCores() - 4, 2)
       parallel.arg <- makeCluster(parallel.arg.n)
@@ -209,7 +217,8 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
     if (missing(parallel.arg)) {
       stopCluster(parallel.arg)
     }
-  } else {
+  } 
+  else {
     for (i in 1:rp.n) {
       if (DM.given) dist.vi<-dMat[,i] else {
         if (rp.given) dist.vi<- gw.dist(dp.locat, rp.locat, focus=i, p, theta, longlat)
@@ -276,7 +285,8 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
     enp <- diags[4]
     gw.R2 <- diags[6]
     gwR2.adj <- diags[7]
-    GW.diagnostic <- list(RSS.gw = RSS.gw, AIC = AIC, AICc = AICc, enp = enp, edf = edf, gw.R2 = gw.R2, gwR2.adj = gwR2.adj)
+	BIC <- diags[8]
+    GW.diagnostic <- list(RSS.gw = RSS.gw, AIC = AIC, AICc = AICc, enp = enp, edf = edf, gw.R2 = gw.R2, gwR2.adj = gwR2.adj, BIC=BIC)
     ######Parameters returned for F tests
     Ftests<-list()
     if(F123.test)
@@ -415,6 +425,8 @@ print.gwrm<-function(x, ...)
 	##AICc = 	dev + 2.0 * (double)N * ( (double)MGlobal + 1.0) / ((double)N - (double)MGlobal - 2.0);
 	lm_AICc= dp.n*log(lm_RSS/dp.n)+dp.n*log(2*pi)+dp.n+2*dp.n*(var.n+1)/(dp.n-var.n-2)
 	cat("\n   AICc: ", lm_AICc)
+	lm_BIC = dp.n*log(lm_RSS/dp.n)+dp.n*log(2*pi)+log(dp.n)*2*(var.n + 1)
+	cat("\n   BIC: ", lm_BIC)
 	#lm_rdf <- x$dfsidual
 
 	#########################################################################
@@ -476,6 +488,7 @@ print.gwrm<-function(x, ...)
 		cat("   AICc (GWR book, Fotheringham, et al. 2002, p. 61, eq 2.33):",
                     x$GW.diagnostic$AICc, "\n")
 		cat("   AIC (GWR book, Fotheringham, et al. 2002,GWR p. 96, eq. 4.22):", x$GW.diagnostic$AIC, "\n")
+		cat("   BIC (GWR book, Fotheringham, et al. 2002,GWR p. 61, eq. 2.34):", x$GW.diagnostic$BIC, "\n")
 		cat("   Residual sum of squares:", x$GW.diagnostic$RSS.gw, "\n")
     cat("   R-square value: ",x$GW.diagnostic$gw.R2,"\n")
 		cat("   Adjusted R-square value: ",x$GW.diagnostic$gwR2.adj,"\n")
@@ -810,7 +823,6 @@ test.gwr.par<-function(formula, data, regression.points, bw, kernel = "bisquare"
 		a<-sample(seq(1,dp.n))
 		xx<-x[a,]
 		yy<-y[a]
-
         gwsi <- gw_reg(xx, yy, W.i, hatmatrix, i)
         beta.i[i, ,perm+1] <- gwsi[[1]]
     }

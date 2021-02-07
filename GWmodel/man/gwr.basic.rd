@@ -3,6 +3,14 @@
 \alias{gw_reg}
 \alias{gwr_diag}
 \alias{Ci_mat}
+\alias{gw_local_r2}
+\alias{gw_reg_1}
+\alias{gw_reg_2}
+\alias{gw_reg_all}
+\alias{gw_reg_all_cuda}
+\alias{gw_cv_all_omp}
+\alias{gw_reg_all_omp}
+\alias{trhat2}
 \alias{F1234.test}
 \alias{print.gwrm}
 \title{Basic GWR model}
@@ -41,7 +49,7 @@ parallel.method=FALSE,parallel.arg=NULL)
   \item{cv}{if TRUE, cross-validation data will be calculated and returned in the output Spatial*DataFrame}
   \item{W.vect}{default NULL, if given it will be used to weight the distance weighting matrix}
   \item{x}{an object of class \dQuote{gwrm}, returned by the function \code{\link{gwr.basic}}}
-    \item{parallel.method}{ FALSE as default, and the calibration will be conducted traditionally via the serial technique, 
+  \item{parallel.method}{ FALSE as default, and the calibration will be conducted traditionally via the serial technique, 
                          "omp": multi-thread technique with the OpenMP API, 
                          "cluster": multi-process technique with the \pkg{parallel} package,
                          "cuda": parallel computing technique with CUDA}
