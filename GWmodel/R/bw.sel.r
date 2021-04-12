@@ -1,6 +1,7 @@
 ###Basic function for bandwidth selction
 ##Author: Binbin Lu
-bw.gwr<-function(formula, data, approach="CV",kernel="bisquare",adaptive=FALSE, p=2, theta=0, longlat=F,dMat,parallel.method=F,parallel.arg=NULL)
+bw.gwr<-function(formula, data, approach="CV",kernel="bisquare",adaptive=FALSE, p=2, theta=0, 
+                longlat=F,dMat,parallel.method=F,parallel.arg=NULL)
 {
   ##Data points{
   if (is(data, "Spatial"))
@@ -97,10 +98,12 @@ bw.gwr<-function(formula, data, approach="CV",kernel="bisquare",adaptive=FALSE, 
     clusterCall(parallel.arg, function() { library(GWmodel) })
   }
   # ## call for functions
-  if(approach == "cv" || approach == "CV")
-      bw <- gold(gwr.cv, lower, upper, adapt.bw = adaptive, x, y, kernel, adaptive, dp.locat, p, theta, longlat, dMat, T, parallel.method, parallel.arg)
+  if(approach == "bic" || approach == "BIC")
+      bw <- gold(gwr.bic, lower, upper, adapt.bw = adaptive, x, y, kernel, adaptive, dp.locat, p, theta, longlat, dMat, T, parallel.method, parallel.arg)
   else if(approach == "aic" || approach == "AIC" || approach == "AICc")
       bw <- gold(gwr.aic, lower, upper, adapt.bw = adaptive, x, y, kernel, adaptive, dp.locat, p, theta, longlat, dMat, T, parallel.method, parallel.arg)    
+  else 
+      bw <- gold(gwr.cv, lower, upper, adapt.bw = adaptive, x, y, kernel, adaptive, dp.locat, p, theta, longlat, dMat, T, parallel.method, parallel.arg)
   # ## stop cluster
   if (parallel.method == "cluster") {
     if (missing(parallel.arg)) stopCluster(parallel.arg)
@@ -341,7 +344,108 @@ gwr.aic<-function(bw, X, Y, kernel="bisquare",adaptive=FALSE, dp.locat, p=2, the
   AICc.value
 }
 
+####Calculate the BIC with a given bandwidth
+##Author: Binbin Lu
+gwr.bic<-function(bw, X, Y, kernel="bisquare",adaptive=FALSE, dp.locat, p=2, theta=0, longlat=F,dMat, verbose=T,parallel.method=F,parallel.arg=NULL)
+{
+  dp.n<-length(dp.locat[,1])
+  var.n <- ncol(X)
+  #########Distance matrix is given or not
 
+  if (missing(dMat)) {
+    DM.given <- F
+    dMat <- matrix(0, 0, 0)
+  }
+  else if (is.null(dMat) || !is.matrix(dMat)) {
+    DM.given<-F
+    dMat <- matrix(0, 0, 0)
+  }
+  else {
+    DM.given<-T
+    dim.dMat<-dim(dMat)
+    if (dim.dMat[1]!=dp.n||dim.dMat[2]!=dp.n)
+      stop ("Dimensions of dMat are not correct")
+  }
+  ############################################AIC
+  ###In this function, the whole hatmatrix is not fully calculated and only the diagonal elements are computed
+  BIC.value <- Inf
+  if (parallel.method == FALSE) {
+    res <- try(gw_reg_all(X, Y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive))
+    if(!inherits(res, "try-error")) {
+      betas <- res$betas
+      s_hat <- res$s_hat
+      BIC.value <- BIC(Y, X, betas, s_hat)
+    }
+    else BIC.value <- Inf
+  } else if (parallel.method == "omp") {
+    if (missing(parallel.arg)) { threads <- 0 } else {
+      threads <- ifelse(is(parallel.arg, "numeric"), parallel.arg, 0)
+    }
+    res <- try(gw_reg_all_omp(X, Y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, threads))
+    if(!inherits(res, "try-error")) {
+      betas <- res$betas
+      s_hat <- res$s_hat
+      BIC.value <- BIC(Y, X, betas, s_hat)
+    }
+    else BIC.value <- Inf
+  } else if (parallel.method == "cuda") {
+    if (missing(parallel.arg)) { groupl <- 0 } else {
+      groupl <- ifelse(is(parallel.arg, "numeric"), parallel.arg, 0)
+    }
+    res <- try(gw_reg_all_cuda(X, Y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, groupl))
+    if(!inherits(res, "try-error")) {
+      betas <- res$betas
+      s_hat <- res$s_hat
+      BIC.value <- BIC(Y, X, betas, s_hat)
+    }
+    else BIC.value <- Inf
+  } else if (parallel.method == "cluster") {
+    cl.n <- length(parallel.arg)
+    cl.results <- clusterApplyLB(parallel.arg, 1:cl.n, function(group.i, cl.n, x, y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive) {
+      res <- try(gw_reg_all(x, y, dp.locat, FALSE, dp.locat, DM.given, dMat, TRUE, p, theta, longlat, bw, kernel, adaptive, cl.n, group.i))
+      if(!inherits(res, "try-error")) return(res) 
+      else return(NULL)
+    }, cl.n, X, Y, dp.locat, DM.given, dMat, p, theta, longlat, bw, kernel, adaptive)
+    if (!any(is.null(cl.results))) {
+      betas <- matrix(0, nrow = dp.n, ncol=var.n)
+      s_hat <- numeric(2)
+      for (i in 1:cl.n) {
+        res <- cl.results[[i]]
+        betas = betas + res$betas
+        s_hat = s_hat + res$s_hat
+      }
+      BIC.value <- BIC(Y, X, betas, s_hat)
+    } else BIC.value <- Inf
+  } else {
+    s_hat <- numeric(2)
+    betas <- matrix(nrow = dp.n, ncol = var.n)
+    for (i in 1:dp.n) {
+      if (DM.given) dist.vi <- dMat[,i]
+      else dist.vi <- gw.dist(dp.locat=dp.locat, focus=i, p=p, theta=theta, longlat=longlat)
+      W.i <- gw.weight(dist.vi,bw,kernel,adaptive)
+      res<- try(gw_reg(X,Y,W.i,TRUE,i))
+      if(!inherits(res, "try-error")) {
+        si <- res[[2]]
+        s_hat[1] = s_hat[1] + si[i]
+        s_hat[2] = s_hat[2] + sum(tcrossprod(si))
+        betas[i,] <- res[[1]]
+      } else {
+        s_hat[1] <- Inf
+        s_hat[2] <- Inf
+        break
+      }  
+    }
+    if (!any(is.infinite(s_hat))) {
+      BIC.value <- BIC(Y, X, betas, s_hat)
+    } else BIC.value <-Inf
+  }
+  if(is.nan(BIC.value)) BIC.value <- Inf
+  if(verbose) {     
+    if(adaptive) cat("Adaptive bandwidth (number of nearest neighbours):", bw, "BIC value:", BIC.value, "\n")
+    else cat("Fixed bandwidth:", bw, "BIC value:", BIC.value, "\n")
+  }
+  BIC.value
+}
 #######################################################################
 #################### Golden Section search ############################
 #######################################################################

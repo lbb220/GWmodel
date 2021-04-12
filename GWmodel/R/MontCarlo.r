@@ -94,8 +94,8 @@ gwr.montecarlo<-function(formula, data = list(),nsims=99, kernel="bisquare",adap
     {
       dist.vi<-dMat[,i]
       W.i<-gw.weight(dist.vi,bw,kernel,adaptive)
-      gw.resi<-gw_reg(x,y,W.i,F,i)
-      betas[i,]<-gw.resi[[1]]
+      gw.resi<-gw_reg_2(x,y,W.i)
+      betas[i,]<-gw.resi
     }
     for (j in 1:var.n)
     {
@@ -211,7 +211,7 @@ montecarlo.gwr <-function(formula, data = list(),nsims=99, kernel="bisquare",ada
     {
       dist.vi<-dMat[,i]
       W.i<-gw.weight(dist.vi,bw,kernel,adaptive)
-      gw.resi<-gw_reg(x,y,W.i,F,i)
+      gw.resi<-gw_reg_2(x,y,W.i)
       betas[i,]<-gw.resi[[1]]
     }
     for (j in 1:var.n)

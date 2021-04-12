@@ -1,7 +1,9 @@
 #Bootstrap GWR code edited from Harry's code
 #Basic test statistic, modified test statistic and localised test statistic are returned
 #R: number of random samples
-gwr.bootstrap <- function(formula, data, kernel="bisquare",approach="AIC", R=99,k.nearneigh=4,adaptive=FALSE, p=2, theta=0, longlat=FALSE,dMat,verbose=FALSE)
+gwr.bootstrap <- function(formula, data, kernel="bisquare",approach="AIC", R=99,k.nearneigh=4,
+                          adaptive=FALSE, p=2, theta=0, longlat=FALSE,dMat,verbose=FALSE,
+						  parallel.method = FALSE, parallel.arg = NULL)
 {
   ##Record the start time
   timings <- list()
@@ -56,8 +58,8 @@ gwr.bootstrap <- function(formula, data, kernel="bisquare",approach="AIC", R=99,
     lag.model <- lagsarlm(formula,data,listw=glw,method='spam')
   
      ###Basic GWR model
-   bw <- bw.gwr3(formula,data=sp.data,approach=approach,kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose)
-	 gwr.model <- gwr.basic(formula,data=sp.data,bw=bw,kernel=kernel, adaptive=adaptive,dMat=dMat) 
+   bw <- bw.gwr3(formula,data=sp.data,approach=approach,kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose, parallel.method=parallel.method,parallel.arg=parallel.arg)
+	 gwr.model <- gwr.basic(formula,data=sp.data,bw=bw,kernel=kernel, adaptive=adaptive,dMat=dMat, parallel.method=parallel.method,parallel.arg=parallel.arg) 
    #####
 	# For modified test statistic
     ols.bst <- parametric.bs(ols.model,dep.var,dp.locat,W.adj,gwrtvar,R=R, report=n.sim.rep,formula=formula, approach=approach, kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose)
@@ -77,10 +79,10 @@ gwr.bootstrap <- function(formula, data, kernel="bisquare",approach="AIC", R=99,
 	mlr.bsm <- parametric.bs.local(ols.model,dep.var,dp.locat,W.adj,gwrt.mlr,R=R,report=n.sim.rep,formula=formula, approach=approach, kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose)
 	sma.bsm <- parametric.bs.local(sma.model,dep.var,dp.locat,W.adj,gwrt.sma,R=R,report=n.sim.rep,formula=formula, glw,approach=approach, kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose)
   lag.bsm <- parametric.bs.local(lag.model,dep.var,dp.locat,W.adj,gwrt.lag,R=R,report=n.sim.rep,formula=formula, glw,approach=approach, kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose)
-  actual.m.err <- gwrt.err(sp.data,formula,glw,approach, kernel, adaptive,dMat,verbose=verbose)
-	actual.m.mlr <- gwrt.mlr(sp.data,formula,approach, kernel, adaptive,dMat,verbose=verbose)
-	actual.m.sma <- gwrt.sma(sp.data,formula,glw,approach, kernel, adaptive,dMat,verbose=verbose)
-  actual.m.lag <- gwrt.lag(sp.data,formula,glw,approach, kernel, adaptive,dMat,verbose=verbose)
+  actual.m.err <- gwrt.err(sp.data,formula,glw,approach, kernel, adaptive,dMat,verbose=verbose,parallel.method=parallel.method,parallel.arg=parallel.arg)
+	actual.m.mlr <- gwrt.mlr(sp.data,formula,approach, kernel, adaptive,dMat,verbose=verbose,parallel.method=parallel.method,parallel.arg=parallel.arg)
+	actual.m.sma <- gwrt.sma(sp.data,formula,glw,approach, kernel, adaptive,dMat,verbose=verbose,parallel.method=parallel.method,parallel.arg=parallel.arg)
+  actual.m.lag <- gwrt.lag(sp.data,formula,glw,approach, kernel, adaptive,dMat,verbose=verbose, parallel.method=parallel.method,parallel.arg=parallel.arg)
 	indep.vars <- names(ols.model$coefficients)
 	var.n <- length(indep.vars)
 	idx1 <- match("(Intercept)",indep.vars)
@@ -243,9 +245,6 @@ print.gwrbsm <- function(x, ...)
 }
 	
 ################################################################################
-
-# Bootstrapping functions - source('bootpara_ig_ph.R')
-
 generate.lm.data <- function(obj,W,dep.var) {
 	generate.data.lm <- function(obj,W,dep.var) {
 		x = obj$model
@@ -335,18 +334,18 @@ ci.bs <- function(bs.out,ci) apply(bs.out,2,quantile,ci)
 pval.bs <- function(bs.out,stat) apply(sweep(bs.out,2,stat,'>'),2,sum)/(nrow(bs.out)+1)
 
 # Modified test statistic
-gwrtvar <- function(data,formula, approach, kernel, adaptive,dMat,verbose=FALSE) {
-	bw <- bw.gwr3(formula,data=data,approach=approach,kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose)
-	gwr.model <- gwr.basic(formula,data=data,bw=bw,kernel=kernel, adaptive=adaptive,dMat=dMat)
+gwrtvar <- function(data,formula, approach, kernel, adaptive,dMat,verbose=FALSE, parallel.method,parallel.arg) {
+	bw <- bw.gwr3(formula,data=data,approach=approach,kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose,parallel.method=parallel.method,parallel.arg=parallel.arg)
+	gwr.model <- gwr.basic(formula,data=data,bw=bw,kernel=kernel, adaptive=adaptive,dMat=dMat,parallel.method=parallel.method,parallel.arg=parallel.arg)
 	var.n <- length(gwr.model$lm$coefficients)
 	coefs <- gwr.model$SDF@data[,1:var.n] # Key
 	sds   <- gwr.model$SDF@data[,(var.n+6):(var.n*2+5)] # Key and corrected from CB & IG
 	tvals <- coefs/sds
 	apply(tvals,2,sd)}
 ###########################localised test statistic
-gwrt.mlr <- function(data,formula,approach, kernel, adaptive,dMat,verbose=FALSE) {
-    bw <- bw.gwr3(formula,data=data,approach=approach,kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose)
-	gwr.model <- gwr.basic(formula,data=data,bw=bw,kernel=kernel, adaptive=adaptive,dMat=dMat)
+gwrt.mlr <- function(data,formula,approach, kernel, adaptive,dMat,verbose=FALSE, parallel.method,parallel.arg) {
+    bw <- bw.gwr3(formula,data=data,approach=approach,kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose, parallel.method=parallel.method,parallel.arg=parallel.arg)
+	gwr.model <- gwr.basic(formula,data=data,bw=bw,kernel=kernel, adaptive=adaptive,dMat=dMat, parallel.method=parallel.method,parallel.arg=parallel.arg)
 	var.n <- length(gwr.model$lm$coefficients)
 	coefs <- gwr.model$SDF@data[,1:var.n] # Key
 	sds   <- gwr.model$SDF@data[,(var.n+6):(var.n*2+5)] # Key and corrected from CB & IG
@@ -361,9 +360,9 @@ gwrt.mlr <- function(data,formula,approach, kernel, adaptive,dMat,verbose=FALSE)
 	#names(tvals) <- paste(indep.vars, "MLR_t", sep="_")
 	tvals
 	}
-gwrt.err <- function(data,formula,glw,approach, kernel, adaptive,dMat,verbose=FALSE) {
-    bw <- bw.gwr3(formula,data=data,approach=approach,kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose)
-	gwr.model <- gwr.basic(formula,data=data,bw=bw,kernel=kernel, adaptive=adaptive,dMat=dMat)
+gwrt.err <- function(data,formula,glw,approach, kernel, adaptive,dMat,verbose=FALSE, parallel.method,parallel.arg) {
+    bw <- bw.gwr3(formula,data=data,approach=approach,kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose, parallel.method=parallel.method,parallel.arg=parallel.arg)
+	gwr.model <- gwr.basic(formula,data=data,bw=bw,kernel=kernel, adaptive=adaptive,dMat=dMat, parallel.method=parallel.method,parallel.arg=parallel.arg)
 	var.n <- length(names(gwr.model$lm$coefficients))
 	coefs <- gwr.model$SDF@data[,1:var.n] # Key
 	sds   <- gwr.model$SDF@data[,(var.n+6):(var.n*2+5)] # Key and corrected from CB & IG
@@ -380,9 +379,9 @@ gwrt.err <- function(data,formula,glw,approach, kernel, adaptive,dMat,verbose=FA
 	tvals
 	}
  #####
-gwrt.lag <- function(data,formula,glw,approach, kernel, adaptive,dMat,verbose=FALSE) {
-    bw <- bw.gwr3(formula,data=data,approach=approach,kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose)
-	gwr.model <- gwr.basic(formula,data=data,bw=bw,kernel=kernel, adaptive=adaptive,dMat=dMat)
+gwrt.lag <- function(data,formula,glw,approach, kernel, adaptive,dMat,verbose=FALSE, parallel.method,parallel.arg) {
+    bw <- bw.gwr3(formula,data=data,approach=approach,kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose, parallel.method=parallel.method,parallel.arg=parallel.arg)
+	gwr.model <- gwr.basic(formula,data=data,bw=bw,kernel=kernel, adaptive=adaptive,dMat=dMat,parallel.method=parallel.method,parallel.arg=parallel.arg)
 	var.n <- length(names(gwr.model$lm$coefficients))
 	coefs <- gwr.model$SDF@data[,1:var.n] # Key
 	sds   <- gwr.model$SDF@data[,(var.n+6):(var.n*2+5)] # Key and corrected from CB & IG
@@ -399,9 +398,9 @@ gwrt.lag <- function(data,formula,glw,approach, kernel, adaptive,dMat,verbose=FA
 	tvals
 	}
 
-gwrt.sma <- function(data,formula, glw,approach, kernel, adaptive,dMat,verbose=FALSE) {
-    bw <- bw.gwr3(formula,data=data,approach=approach,kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose)
-	gwr.model <- gwr.basic(formula,data=data,bw=bw,kernel=kernel, adaptive=adaptive,dMat=dMat)
+gwrt.sma <- function(data,formula, glw,approach, kernel, adaptive,dMat,verbose=FALSE, parallel.method,parallel.arg) {
+    bw <- bw.gwr3(formula,data=data,approach=approach,kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose, parallel.method=parallel.method,parallel.arg=parallel.arg)
+	gwr.model <- gwr.basic(formula,data=data,bw=bw,kernel=kernel, adaptive=adaptive,dMat=dMat, parallel.method=parallel.method,parallel.arg=parallel.arg)
 	var.n <- length(gwr.model$lm$coefficients)
 	coefs <- gwr.model$SDF@data[,1:var.n] # Key
 	sds   <- gwr.model$SDF@data[,(var.n+6):(var.n*2+5)] # Key and corrected from CB & IG
@@ -420,19 +419,8 @@ gwrt.sma <- function(data,formula, glw,approach, kernel, adaptive,dMat,verbose=F
 	tvals
 	}
 	
-bw.gwr3<-function(formula, data, approach="CV",kernel="bisquare",adaptive=FALSE, p=2, theta=0, longlat=F,verbose=FALSE,dMat, nlower = 10)
+bw.gwr3<-function(formula, data, approach="CV",kernel="bisquare",adaptive=FALSE,verbose=FALSE,dMat, parallel.method,parallel.arg, nlower = 10)
 {
-    ##Data points{
-  if (is(data, "Spatial"))
-  {
-    dp.locat<-coordinates(data)
-    data <- as(data, "data.frame")
-  }
-  else
-  {
-       stop("Given regression data must be Spatial*DataFrame")
-  }
-  #cat("This selection has been optimised by golden selection.\n")
   mf <- match.call(expand.dots = FALSE)
   m <- match(c("formula", "data"), names(mf), 0L)
 
@@ -443,6 +431,7 @@ bw.gwr3<-function(formula, data, approach="CV",kernel="bisquare",adaptive=FALSE,
   mt <- attr(mf, "terms")
   y <- model.extract(mf, "response")
   x <- model.matrix(mt, mf)
+  dp.locat <- coordinates(data)
   dp.n<-nrow(data)
   if(adaptive)
   {
@@ -456,18 +445,26 @@ bw.gwr3<-function(formula, data, approach="CV",kernel="bisquare",adaptive=FALSE,
   }  
   #################### Recommond to specify a distance matrix
   ########################## Now the problem for the golden selection is too computationally heavy
-    #Select the bandwidth by golden selection
-    bw<-NA
-    if(approach=="cv"||approach=="CV")
-       bw <- gold(gwr.cv,lower,upper,adapt.bw=adaptive,x,y,kernel,adaptive, dp.locat, dMat=dMat,verbose=verbose)
-    else if(approach=="aic"||approach=="AIC"||approach=="AICc")
-       bw<-gold(gwr.aic,lower,upper,adapt.bw=adaptive,x,y,kernel,adaptive, dp.locat,dMat=dMat,verbose=verbose)    
-   # bw<-NA
-#    if(approach=="cv"||approach=="CV")
-#       bw <- optimize(bw.cv,lower=lower,upper=upper,maximum=FALSE,X=x,Y=y,kernel=kernel,
-#       adaptive=adaptive, dp.locat=dp.locat, p=p, theta=theta, longlat=longlat,dMat=dMat,tol=.Machine$double.eps^0.25)
-#    else if(approach=="aic"||approach=="AIC"||approach=="AICc")
-#       bw<-optimize(bw.aic,lower=lower,upper=upper,x,y,kernel,adaptive, dp.locat, p, theta, longlat,dMat)    
+    # ## make cluseter
+  if (parallel.method == "cluster") {
+    if (missing(parallel.arg)) {
+      cl.n <- max(detectCores() - 4, 2)
+      parallel.arg <- makeCluster(cl.n)
+    } else cl.n <- length(parallel.arg)
+    clusterCall(parallel.arg, function(){library(GWmodel) })
+  }
+  # ## call for functions
+  if(approach == "bic" || approach == "BIC")
+      bw <- gold(gwr.bic, lower, upper, adapt.bw = adaptive, x, y, kernel, adaptive, dp.locat, 2, 0, FALSE, dMat, verbose, parallel.method, parallel.arg)
+  else if(approach == "aic" || approach == "AIC" || approach == "AICc")
+      bw <- gold(gwr.aic, lower, upper, adapt.bw = adaptive, x, y, kernel, adaptive, dp.locat, 2, 0, FALSE, parallel.method, parallel.arg)    
+  else 
+      bw <- gold(gwr.cv, lower, upper, adapt.bw = adaptive, x, y, kernel, adaptive, dp.locat, 2, 0, FALSE, dMat, verbose, parallel.method, parallel.arg)
+  # ## stop cluster
+  if (parallel.method == "cluster") {
+    if (missing(parallel.arg)) stopCluster(parallel.arg)
+  }
+  bw  
     bw
 
 }

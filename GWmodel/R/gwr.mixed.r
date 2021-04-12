@@ -1,5 +1,12 @@
+## Don't need locations if dMat and dMat.rp are supplied
+## Removed other inputs to gwr.mixed that weren't used in gwr.mixed
+## Input diagnostic wasn't used in gwr.mixed, but is here:
+##      if (diagnostic == F) this is now very fast
+##      if (diagnostic == T) this is around 5 times faster than gwr.mixed
+## Revised by Fiona H Evans from Centre for Digital Agriculture, Murdoch and Curtin Universities
+
 gwr.mixed <- function(formula, data, regression.points, fixed.vars,intercept.fixed=FALSE, bw, diagnostic=T,
-             kernel="bisquare", adaptive=FALSE, p=2, theta=0, longlat=F,dMat)
+             kernel="bisquare", adaptive=FALSE, p=2, theta=0, longlat=F,dMat, dMat.rp)
 {
    ##Record the start time
   timings <- list()
@@ -7,6 +14,10 @@ gwr.mixed <- function(formula, data, regression.points, fixed.vars,intercept.fix
   ###################################macth the variables
   this.call <- match.call()
   p4s <- as.character(NA)
+  if (diagnostic) 
+     hatmatrix <- T
+  else 
+     hatmatrix <- F
   #####Check the given data frame and regression points
   #####Regression points
   if (missing(regression.points))
@@ -14,12 +25,10 @@ gwr.mixed <- function(formula, data, regression.points, fixed.vars,intercept.fix
   	rp.given <- FALSE
     regression.points <- data
     rp.locat<-coordinates(data)
-    hatmatrix<-T
   }
   else
   {
     rp.given <- TRUE
-    hatmatrix<-F
     if (is(regression.points, "Spatial"))
     {
        rp.locat<-coordinates(regression.points)
@@ -50,19 +59,25 @@ gwr.mixed <- function(formula, data, regression.points, fixed.vars,intercept.fix
   {
       DM.given<-F
       DM1.given<-F
-      if(dp.n + rp.n <= 10000)
-      {
-        dMat <- gw.dist(dp.locat=dp.locat, rp.locat=rp.locat, p=p, theta=theta, longlat=longlat)
-        DM.given<-T
-      }
+      dMat <- gw.dist(dp.locat=dp.locat, rp.locat=dp.locat, p=p, theta=theta, longlat=longlat)
+      dMat.rp <- gw.dist(dp.locat=dp.locat, rp.locat=rp.locat, p=p, theta=theta, longlat=longlat)
   }
   else
   {
     DM.given<-T
-    DM1.given<-T
     dim.dMat<-dim(dMat)
-    if (dim.dMat[1]!=dp.n||dim.dMat[2]!=rp.n)
+    if (dim.dMat[1]!=dp.n||dim.dMat[2]!=dp.n)
        stop("Dimensions of dMat are not correct")
+    if (missing(dMat.rp)) {
+    dMat.rp <- dMat
+    }
+    else
+    {
+       dim.dMat.rp <- dim(dMat.rp)
+    if (dim.dMat.rp[1]!=dp.n||dim.dMat.rp[2]!=rp.n)
+        stop("Dimensions of dMat.rp are not correct")
+    }
+    DM1.given<-T 
   }
   ####################
   ######Extract the data frame
@@ -99,35 +114,37 @@ gwr.mixed <- function(formula, data, regression.points, fixed.vars,intercept.fix
   colnames(x1) <- colnames(x)[-idx.fixed]
   colnames(x2) <- colnames(x)[idx.fixed]
   #y <- as.matrix(y, nrow = dp.n)
-  model <- gwr.mixed.2(x1, x2, y, dp.locat, out.loc=rp.locat, adaptive=adaptive, bw=bw,
-                        kernel=kernel, p=p, theta=theta, longlat=longlat,dMat)                     
+  model <- gwr.mixed.2.fast(x1, x2, y, adaptive=adaptive, bw=bw,
+                        kernel=kernel, dMat=dMat, dMat.rp=dMat.rp)                     
   res <- list()
    res$local <- model$local 
-   res$global <- apply(model$global,2,mean,na.rm=T) 
+   res$global <- as.matrix(apply(model$global,2,mean,na.rm=T), 1, length(idx.fixed))
+   colnames(res$local) <- colnames(x1)
+   colnames(res$global) <- colnames(x2)
    mgwr.df <- data.frame(model$local, model$global)
    colnames(mgwr.df) <- c(paste(colnames(x1), "L", sep="_"), paste(colnames(x2), "F", sep="_"))
    rownames(rp.locat)<-rownames(mgwr.df)
   griddedObj <- F
-    if (is(regression.points, "Spatial"))
-    { 
-        if (is(regression.points, "SpatialPolygonsDataFrame"))
-        {
-           polygons<-polygons(regression.points)
-           #SpatialPolygons(regression.points)
-           #rownames(mgwr.df) <- sapply(slot(polygons, "polygons"),
-                              #  function(i) slot(i, "ID"))
-           SDF <-SpatialPolygonsDataFrame(Sr=polygons, data=mgwr.df, match.ID=F)
-        }
-        else
-        {
-           griddedObj <- gridded(regression.points)
-           SDF <- SpatialPointsDataFrame(coords=rp.locat, data=mgwr.df, proj4string=CRS(p4s), match.ID=F)
-           gridded(SDF) <- griddedObj 
-        }
-    }
-    else
-        SDF <- SpatialPointsDataFrame(coords=rp.locat, data=mgwr.df, proj4string=CRS(p4s), match.ID=F)
- #  
+     if (is(regression.points, "Spatial"))
+     { 
+         if (is(regression.points, "SpatialPolygonsDataFrame"))
+         {
+            polygons<-polygons(regression.points)
+            #SpatialPolygons(regression.points)
+   #         #rownames(mgwr.df) <- sapply(slot(polygons, "polygons"),
+   #                            #  function(i) slot(i, "ID"))
+            SDF <-SpatialPolygonsDataFrame(Sr=polygons, data=mgwr.df, match.ID=F)
+         }
+         else
+         {
+            griddedObj <- gridded(regression.points)
+            SDF <- SpatialPointsDataFrame(coords=rp.locat, data=mgwr.df, proj4string=CRS(p4s), match.ID=F)
+            gridded(SDF) <- griddedObj 
+         }
+     }
+     else
+         SDF <- SpatialPointsDataFrame(coords=rp.locat, data=mgwr.df, proj4string=CRS(p4s), match.ID=F)
+ # 
 #   if (is(regression.points, "SpatialPolygonsDataFrame"))
 #    {
 #       polygons<-polygons(regression.points)
@@ -143,10 +160,10 @@ gwr.mixed <- function(formula, data, regression.points, fixed.vars,intercept.fix
    if (hatmatrix)
    {
       gwr.fitted <- function(x,b) apply(x*b,1,sum)
-      edf <- gwr.mixed.trace(x1, x2, y, dp.locat, adaptive=adaptive, bw=bw,
-               kernel=kernel, p=p, theta=theta, longlat=longlat,dMat=dMat)
-      model2 <- gwr.mixed.2(x1, x2, y, dp.locat, adaptive=adaptive, bw=bw, 
-                kernel=kernel, p=p, theta=theta, longlat=longlat,dMat=dMat)
+      edf <- gwr.mixed.trace.fast(x1, x2, y, adaptive=adaptive, bw=bw,
+               kernel=kernel, dMat=dMat)
+      model2 <-gwr.mixed.2.fast(x1, x2, y, adaptive=adaptive, bw=bw, 
+                kernel=kernel, dMat=dMat, dMat.rp=dMat)
       #r.ss <- rss(y, cbind(x1,x2), cbind(model2$local, model2$global)) 
       r.ss <- sum((y - gwr.fitted(model2$global, x2) - gwr.fitted(model2$local,x1))^2)
       n1 <- length(y)
@@ -154,17 +171,27 @@ gwr.mixed <- function(formula, data, regression.points, fixed.vars,intercept.fix
       aic <- log(sigma.aic*2*pi) + 1 + 2*(edf + 1)/(n1 - edf - 2)
       aic <- n1*aic
       res$aic <- aic
+      res$bic <- n1*log(sigma.aic) + n1*log(2*pi) + edf * log(n1)
       res$df.used <- edf
       res$r.ss <- r.ss
    }
    GW.arguments<-list(formula=formula,rp.given=rp.given,hatmatrix=hatmatrix,bw=bw, 
-                       kernel=kernel,adaptive=adaptive, p=p, theta=theta, longlat=longlat,DM.given=DM1.given,diagnostic=diagnostic)
+                       kernel=kernel,adaptive=adaptive, p=p, theta=theta, longlat=longlat,
+                       DM.given=DM1.given,diagnostic=diagnostic)
    res$GW.arguments <- GW.arguments
    res$this.call <- this.call
    timings[["stop"]] <- Sys.time()
    res$timings <- timings
    class(res) <- "mgwr"
-   res}
+   res
+}
+
+gwr.mixed.2.fast <- function(x1, x2, y, adaptive=F, bw,
+                            kernel="bisquare", dMat, dMat.rp)
+{ 
+  gwr_mixed_2(x1, x2, y, dMat, dMat.rp, bw, kernel, adaptive)
+}
+
 
 ##Mixed GWR
 gwr.mixed.2 <- function(x1, x2, y, loc, out.loc, adaptive=F, bw=sqrt(var(loc[,1])+var(loc[,2])),
@@ -195,8 +222,8 @@ gwr.mixed.2 <- function(x1, x2, y, loc, out.loc, adaptive=F, bw=sqrt(var(loc[,1]
    fit2 <- gw.fitted(x2,model2)
    model1 <-gwr.q(x1, y-fit2, loc, out.loc=out.loc,adaptive=adaptive, bw=bw,
                   kernel=kernel, p=p, theta=theta, longlat=longlat,dMat=dMat)
-   
-   model2 <-gwr.q(x3, y2, loc,out.loc=out.loc, adaptive=TRUE, bw=1.0e6, kernel="boxcar",
+   if(!missing(out.loc))
+      model2 <-gwr.q(x3, y2, loc,out.loc=out.loc, adaptive=TRUE, bw=1.0e6, kernel="boxcar",
                   p=p, theta=theta, longlat=longlat,dMat=dMat)
    list(local=model1,global=model2)
   }
@@ -207,7 +234,7 @@ gwr.mixed.2 <- function(x1, x2, y, loc, out.loc, adaptive=F, bw=sqrt(var(loc[,1]
 
 gwr.mixed.trace <- function(x1, x2, y, loc, out.loc, adaptive=F, bw=sqrt(var(loc[,1])+var(loc[,2])),
                kernel="bisquare", p=2, theta=0, longlat=F,dMat)
-  {gwr.fitted <- function(x,b) apply(x*b,1,sum)
+  {gw.fitted <- gwr.fitted <- function(x,b) apply(x*b,1,sum)
    e.vec <- function(m,n) as.numeric(m == 1:n)
    dp.n <- nrow(loc)
    if (missing(dMat))
@@ -258,6 +285,10 @@ gwr.mixed.trace <- function(x1, x2, y, loc, out.loc, adaptive=F, bw=sqrt(var(loc
        hii <- c(hii,gwr.fitted(matrix(x1[i,],nrow=1),model1)+gwr.fitted(matrix(x2[i,],nrow=1),model2)) }                   
    sum(hii)
   }
+gwr.mixed.trace.fast <- function(x1, x2, y, adaptive=F, bw,
+                            kernel="bisquare", dMat){
+  gwr_mixed_trace(x1, x2, y, dMat, bw, kernel, adaptive)
+}
 
 print.mgwr <- function(x, ...)
 {
@@ -272,7 +303,7 @@ print.mgwr <- function(x, ...)
   
   cat("\n   *********************Model calibration information*********************\n")
   gwr.names <- colnames(x$local)
-   global.names <- names(x$global)
+   global.names <- colnames(x$global)
    cat("   Mixed GWR model with local variables :", gwr.names, "\n")
    cat("   Global variables :", global.names, "\n")
 	cat("   Kernel function:", x$GW.arguments$kernel, "\n")
@@ -325,6 +356,7 @@ print.mgwr <- function(x, ...)
     	cat("   ************************Diagnostic information*************************\n")
      cat("   Effective D.F.:  ",format(x$df.used,digits=4),"\n")
      cat("   Corrected AIC:  ",format(x$aic,digits=4),"\n")
+     cat("             BIC:  ",format(x$bic,digits=4),"\n")
      cat("   Residual sum of squares:  ",format(x$r.ss,digits=4),"\n")
    }
   cat("\n   ***********************************************************************\n")
@@ -336,26 +368,29 @@ print.mgwr <- function(x, ...)
 gwr.q <- function(x, y, loc, out.loc=loc, adaptive=F, bw=sqrt(var(loc[,1])+var(loc[,2])),
                   kernel, p, theta, longlat,dMat, wt2=rep(1,nrow(loc)))
 {
-  if (missing(dMat))
-     DM.given <- F
-  else
-     DM.given <- T
   if(missing(out.loc))
     rp.n <- nrow(loc)
   else
     rp.n <- nrow(out.loc)
+  if (missing(dMat))
+     dMat <- gw.dist(loc, out.loc, p, theta, longlat)
   var.n <- ncol(x)
-  betas <- matrix(nrow=rp.n, ncol=var.n)
-  for (i in 1:rp.n)
-  {
-    if(DM.given)
-       dist.vi <- dMat[,i]
-    else
-       dist.vi <- gw.dist(loc, out.loc, focus=i, p, theta, longlat)
-    W.i<-gw.weight(dist.vi,bw,kernel,adaptive)
-    gw.resi<-gw_reg(x,y,as.vector(W.i*wt2),hatmatrix=F,i)
-    betas[i,]<-gw.resi[[1]]
+  betas <- gwr_q(x,  y, dMat, bw, kernel, adaptive)
+  colnames(betas) <- colnames(x)
+  betas
+}
+
+gwr.q.fast <- function(x, y, adaptive=F, bw,
+                  kernel, dMat)
+{
+  if (missing(dMat)) {
+    stop("Error: distance matrix missing")
   }
+  
+  else {
+    betas <- gwr_q(x,  y, dMat, bw, kernel, adaptive)
+  }
+    
   colnames(betas) <- colnames(x)
   betas
 }

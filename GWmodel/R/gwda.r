@@ -112,20 +112,28 @@ gwda <- function(formula, data, predict.data,validation = T, COV.gw=T,
     NV <- dim(res.df)[2]
     NP <- NV - 1
     temp <- res.df
-    
-    for (icol in 1:NP) temp[,icol] <- as.numeric(levels(temp[,icol])[temp[,icol]])
-    for (icol in 1:NP) temp[,icol] <- exp(-temp[,icol])
+    for (icol in 1:NP)
+      {
+        temp.i <- as.numeric(temp[,icol])
+        temp[,icol] <- exp(-temp.i)
+      }
     probs <- sweep(temp[,1:NP],1,rowSums(temp[,1:NP]),"/")
     pmax  <- apply(probs,1,max)
     
     shannon.entropy <- function(p) {
-      if (min(p) < 0 || sum(p) <= 0)
-        return(NA)
-      p.norm <- p[p>0]/sum(p)
-      -sum(log2(p.norm)*p.norm)
-    }
+      p.norm <- 0
+      p1 <- min(p)
+      p2 <- sum(p)
+      if (p1 < 0 || p2 <= 0)
+            return(NA)
+      else {
+           p.norm <- p[p>0]/sum(p)
+           return(-sum(log2(p.norm)*p.norm))
+      }
     
-    ent.max <- shannon.entropy(rep(1/NP,NP))
+    }
+   
+    ent.max <- shannon.entropy(p=rep(1/NP,NP))
     entropy <- apply(probs,1,shannon.entropy)/ent.max
     
     colnames(probs) <- gsub("logp","p",colnames(res.df)[1:NP])

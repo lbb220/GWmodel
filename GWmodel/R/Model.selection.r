@@ -62,8 +62,8 @@ gwr.model.selection<-function(DeVar=NULL,InDeVars=NULL, data=list(),bw=NULL,appr
 	    y <- matL[[1]]
 	    x <- matL[[2]]
       if (is.null(bw)) {
-        part1 <- paste("bandwidth<-bw.gwr(", fml, sep = "")
-        part2 <- "data=spdf,kernel=kernel,approach=approach,dMat=dMat)"
+        part1 <- paste("bw<-bw.gwr(", fml, sep = "")
+        part2 <- "data=spdf,kernel=kernel,approach=approach,dMat=dMat, parallel.method=parallel.method,parallel.arg=parallel.arg)"
         expression <- paste(part1, part2, sep = ",")
         print(expression)
         eval(parse(text = expression))
@@ -75,7 +75,6 @@ gwr.model.selection<-function(DeVar=NULL,InDeVars=NULL, data=list(),bw=NULL,appr
           stopifnot(is.numeric(bw))
           stopifnot((bw > min(dMat)))
         }
-        bandwidth <- bw
       } 
 
       ##############Calibrate the GWR model
@@ -113,7 +112,7 @@ gwr.model.selection<-function(DeVar=NULL,InDeVars=NULL, data=list(),bw=NULL,appr
         for (i in 1:dp.n)
         {
           dist.vi<-dMat[,i]
-          W.i<-gw.weight(dist.vi,bandwidth,kernel,adaptive)
+          W.i<-gw.weight(dist.vi,bw,kernel,adaptive)
           gw.resi<-gw_reg(x,y,W.i,hatmatrix=T,i)
           betas[i,]<-as.numeric(gw.resi[[1]])
           S[i,]<-gw.resi[[2]]
@@ -194,8 +193,8 @@ model.selection.gwr <-function(DeVar=NULL,InDeVars=NULL, data=list(),bw=NULL,app
       y <- matL[[1]]
       x <- matL[[2]]
       if (is.null(bw)) {
-        part1 <- paste("bandwidth<-bw.gwr(", fml, sep = "")
-        part2 <- "data=spdf,kernel=kernel,approach=approach,dMat=dMat)"
+        part1 <- paste("bw<-bw.gwr(", fml, sep = "")
+        part2 <- "data=spdf,kernel=kernel,approach=approach,dMat=dMat, parallel.method=parallel.method,parallel.arg=parallel.arg)"
         expression <- paste(part1, part2, sep = ",")
         print(expression)
         eval(parse(text = expression))
@@ -207,7 +206,6 @@ model.selection.gwr <-function(DeVar=NULL,InDeVars=NULL, data=list(),bw=NULL,app
           stopifnot(is.numeric(bw))
           # stopifnot((bw > min(dMat)))
         }
-        bandwidth <- bw
       }
 
       ##############Calibrate the GWR model
@@ -250,7 +248,7 @@ model.selection.gwr <-function(DeVar=NULL,InDeVars=NULL, data=list(),bw=NULL,app
       } else {
         for (i in 1:dp.n) {
           dist.vi<-dMat[,i]
-          W.i<-gw.weight(dist.vi,bandwidth,kernel,adaptive)
+          W.i<-gw.weight(dist.vi,bw,kernel,adaptive)
           gw.resi<-gw_reg(x,y,W.i,hatmatrix=T,i)
           betas[i,]<-as.numeric(gw.resi[[1]])
           S[i,]<-gw.resi[[2]]
