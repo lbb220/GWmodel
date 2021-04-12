@@ -4,6 +4,7 @@ gw_dist <- function(dp.locat, rp.locat, focus, p, theta, longlat, rp.given) {
   .Call('GWmodel_gw_dist', PACKAGE = 'GWmodel', dp.locat, rp.locat, focus, p, theta, longlat, rp.given)
 }
 gw_weight<- function(dist, bw, kernel, adaptive){
+<<<<<<< HEAD
   kernel.id <- 0
   kernel.id <- switch (kernel,
                        gaussian = 0,
@@ -32,6 +33,15 @@ gw_weight_mat<- function(mdist, bw, kernel, adaptive){
                        tricube  = 3,
                        boxcar   = 4)
   .Call('GWmodel_gw_weight_mat', PACKAGE = 'GWmodel', mdist, bw, kernel.id, adaptive)
+=======
+  .Call('GWmodel_gw_weight', PACKAGE = 'GWmodel', dist, bw, kernel, adaptive)
+}
+gw_weight_vec<- function(vdist, bw, kernel, adaptive){
+  .Call('GWmodel_gw_weight_vec', PACKAGE = 'GWmodel', vdist, bw, kernel, adaptive)
+}
+gw_weight_mat<- function(mdist, bw, kernel, adaptive){
+  .Call('GWmodel_gw_weight_mat', PACKAGE = 'GWmodel', mdist, bw, kernel, adaptive)
+>>>>>>> master
 }
 gw_reg <- function(x, y, w, hatmatrix,focus) {
     .Call('GWmodel_gw_reg', PACKAGE = 'GWmodel', x, y, w, hatmatrix,focus)
@@ -81,7 +91,10 @@ Ci_mat <- function(x, w) {
     .Call('GWmodel_Ci_mat', PACKAGE = 'GWmodel', x, w)
 }
 gw_local_r2 <- function(dp, dybar2, dyhat2, dm_given, dmat, p, theta, longlat, bw, kernel, adaptive) {
+<<<<<<< HEAD
   kernel.id <- 0
+=======
+>>>>>>> master
   kernel.id <- switch (kernel,
                        gaussian = 0,
                        exponential = 1,
@@ -100,6 +113,7 @@ gw_reg_2<- function(x, y, w)
 }
 gwr_q <- function(x,  y, dMat, bw, kernel, adaptive) 
 {
+<<<<<<< HEAD
   kernel.id <- 0
   kernel.id <- switch (kernel,
                        gaussian = 0,
@@ -108,6 +122,9 @@ gwr_q <- function(x,  y, dMat, bw, kernel, adaptive)
                        tricube  = 3,
                        boxcar   = 4)
    .Call('GWmodel_gwr_q', PACKAGE = 'GWmodel', x,  y, dMat, bw, kernel.id, adaptive)  
+=======
+   .Call('GWmodel_gwr_q', PACKAGE = 'GWmodel', x,  y, dMat, bw, kernel, adaptive)  
+>>>>>>> master
 }
 #scgwr_pre(mat x, vec y, int bw, int poly, double b0, mat g0, mat neighbour)
 scgwr_pre <- function(x, y, bw, poly, b0, g0, neighbour) {
@@ -200,6 +217,7 @@ e_vec<- function(m,n)
 }
 gwr_mixed_trace <- function(x1, x2, y, dMat, bw, kernel, adaptive) 
 {
+<<<<<<< HEAD
   kernel.id <- 0
   kernel.id <- switch (kernel,
                        gaussian = 0,
@@ -219,4 +237,11 @@ gwr_mixed_2 <- function(x1, x2, y, dMat, dMat.rp, bw, kernel, adaptive)
                        tricube  = 3,
                        boxcar   = 4)
    .Call('GWmodel_gwr_mixed_2', PACKAGE = 'GWmodel', x1, x2, y, dMat, dMat.rp, bw, kernel.id, adaptive)  
+=======
+   .Call('GWmodel_gwr_mixed_trace', PACKAGE = 'GWmodel', x1, x2, y, dMat, bw, kernel, adaptive) 
+}
+gwr_mixed_2 <- function(x1, x2, y, dMat, dMat.rp, bw, kernel, adaptive) 
+{
+   .Call('GWmodel_gwr_mixed_2', PACKAGE = 'GWmodel', x1, x2, y, dMat, dMat.rp, bw, kernel, adaptive)  
+>>>>>>> master
 }

@@ -286,6 +286,7 @@ double sp_gcdist(double lon1, double lon2, double lat1, double lat2) {
     H2 = ( 3*R + 1 )/( 2*S );
     
     return D*( 1 + f*H1*sinF2*cosG2 - f*H2*cosF2*sinG2 ); 
+<<<<<<< HEAD
 }
 
 // Calculate the distance vector between a point and a set of points, latitude and longitude required
@@ -407,6 +408,223 @@ mat gw_weight(mat dist, double bw, int kernel, bool adaptive) {
 // Geographic weights
 // [[Rcpp::export]]
 vec gw_weight_vec(vec vdist, double bw, int kernel, bool adaptive)
+=======
+}
+
+// Calculate the distance vector between a point and a set of points, latitude and longitude required
+vec sp_dists(mat dp, vec loc) {
+  int N = dp.n_rows, j;
+  vec dists(N, fill::zeros);
+  double uout = loc(0), vout = loc(1);
+  for (j = 0; j < N; j++) {
+    dists(j) = sp_gcdist(dp(j, 0), uout, dp(j, 1), vout);
+  }
+  return dists;
+}
+
+// Equal to gw.dist, to be checked
+// [[Rcpp::export]]
+mat gw_dist(mat dp, mat rp, int focus, double p, double theta, bool longlat, bool rp_given) {
+  int ndp = dp.n_rows, nrp = rp.n_rows;
+  int isFocus = focus > -1;
+  mat dists;
+  if (p != 2 && theta != 0 && !longlat) {
+    dp = coordinate_rotate(dp, theta);
+    rp = coordinate_rotate(rp, theta);
+  }
+  if (isFocus) {
+    mat prp = trans(rp.row(focus));
+    if (longlat) {
+      return sp_dists(dp, prp);
+    } else {
+      if (p == 2.0)
+        return eu_dist_vec(dp, prp);
+      else if(p == -1.0)
+        return cd_dist_vec(dp, prp);
+      else if(p == 1.0)
+        return md_dist_vec(dp, prp);
+      else
+        return mk_dist_vec(dp, prp, p);
+    }
+  } else {
+    if (longlat) {
+      mat dists(ndp, nrp, fill::zeros);
+      for (int i = 0; i < nrp; i++) {
+        dists.col(i) = sp_dists(dp, trans(rp.row(i)));
+      }
+      return trans(dists);
+    } else {
+      if (p == 2.0)
+        return rp_given ? eu_dist_mat(dp, rp) : eu_dist_smat(dp);
+      else if (p == -1.0)
+        return rp_given ? cd_dist_mat(dp, rp) : cd_dist_smat(dp);
+      else if (p == 1.0)
+        return rp_given ? md_dist_mat(dp, rp) : md_dist_smat(dp);
+      else
+        return rp_given ? mk_dist_mat(dp, rp, p) : mk_dist_smat(dp, p);
+    }
+  }
+}
+//---------------------------------------------------------------------------------------------------------------------------------------------------
+
+//--------------------------------------Weight matrix caculation-------------------------------------------------------------------------------------
+//Calucate the GW weights
+double gw_weight_gaussian(double dist, double bw) {
+  return exp(pow(dist, 2)/((-2)*pow(bw, 2)));
+}
+
+double gw_weight_exponential(double dist, double bw) {
+  return exp(-dist/bw);
+}
+
+double gw_weight_bisquare(double dist, double bw) {
+  return dist > bw ? 0 : pow(1 - pow(dist, 2)/pow(bw, 2), 2);
+}
+
+double gw_weight_tricube(double dist, double bw) {
+  return dist > bw ? 0 : pow(1 - pow(dist, 3)/pow(bw, 3), 3);
+}
+
+double gw_weight_boxcar(double dist, double bw) {
+  return dist > bw ? 0 : 1;
+}
+
+typedef double (*KERNEL)(double, double);
+const KERNEL GWRKernel[5] = {
+  gw_weight_gaussian,
+  gw_weight_exponential,
+  gw_weight_bisquare,
+  gw_weight_tricube,
+  gw_weight_boxcar
+};
+
+//gwr.weight in the R code
+// [[Rcpp::export]]
+mat gw_weight(mat dist, double bw, int kernel, bool adaptive) {
+  const KERNEL *kerf = GWRKernel + kernel;
+  int nr = dist.n_rows, nc = dist.n_cols;
+  mat w(nr, nc, fill::zeros);
+  if (adaptive) {
+    for (int c = 0; c < nc; c++) {
+      double dn = bw / nr, fixbw = 0;
+      if (dn <= 1) {
+        vec vdist = sort(dist.col(c));
+        fixbw = vdist(int(bw) - 1);
+      } else {
+        fixbw = dn * max(dist.col(c));
+      }
+      for (int r = 0; r < nr; r++) {
+        w(r, c) = (*kerf)(dist(r, c), fixbw);
+      }
+    }
+  } else {
+    for (int c = 0; c < nc; c++) {
+      for (int r = 0; r < nr; r++) {
+        w(r, c) = (*kerf)(dist(r, c), bw);
+      }
+    }
+  }
+  return w;
+}
+//------------------------------------------------------
+//Bisuqare weight
+vec bisq_wt_vec(vec distv, double bw)
+{
+	int n = distv.n_elem;
+	vec wtv;
+	wtv.zeros(n);
+	for (int i = 0; i < n; i++)
+	{
+		if (distv(i) <= bw)
+			wtv(i) = pow(1 - pow(distv(i) / bw, 2), 2);
+	}
+	return wtv;
+}
+
+// Bisquare adaptive weights
+vec bis_wt_vec_ad(vec distv, double bw)
+{
+  int n = distv.n_elem;
+  double bwd = bw/n * distv.max();
+  
+  if (bw <= n){
+    // equivalent to R function rank(distv, ties.method='first')
+    uvec rnk1 = sort_index(distv) + 1;
+    uvec rnk = sort_index(rnk1) + 1;
+    
+    uvec u = find(rnk == bw);
+    bwd = distv(u(0));
+  }
+  
+  vec wtv = bisq_wt_vec(distv, bwd);
+  return wtv;
+}
+//------------------------------------------------------
+//Gaussian weight
+vec gauss_wt_vec(vec distv, double bw)
+{
+	int n = distv.n_elem;
+	vec wtv;
+	wtv.zeros(n);
+	for (int i = 0; i < n; i++)
+	{
+		wtv(i) = exp(pow(distv(i), 2) / ((-2) * pow(bw, 2)));
+	}
+	return wtv;
+}
+// Gaussian adaptive weights
+vec gau_wt_vec_ad(vec distv, double bw)
+{
+  int n = distv.n_elem;
+  double bwd = bw/n * distv.max();
+  if (bw <= n){
+    // equivalent to R function rank(distv, ties.method='first')
+    uvec rnk1 = sort_index(distv) + 1;
+    uvec rnk = sort_index(rnk1) + 1;
+    
+    uvec u = find(rnk == bw);
+    bwd = distv(u(0));
+  }
+  
+  vec wtv = exp(pow(distv, 2) / ((-2) * pow(bwd, 2)));
+  
+  return wtv;
+}
+//------------------------------------------------------
+//Tricube weight
+vec tri_wt_vec(vec distv, double bw)
+{
+	int n = distv.n_elem;
+	vec wtv;
+	wtv.zeros(n);
+	for (int i = 0; i < n; i++)
+	{
+		if (distv(i) <= bw)
+			wtv(i) = pow(1 - pow(distv(i), 3) / pow(bw, 3), 3);
+	}
+	return wtv;
+}
+// Tricube adaptive weight
+vec tri_wt_vec_ad(vec distv, double bw)
+{
+  int n = distv.n_elem;
+  double bwd = bw/n * distv.max();
+  
+  if (bw <= n){
+    // equivalent to R function rank(distv, ties.method='first')
+    uvec rnk1 = sort_index(distv) + 1;
+    uvec rnk = sort_index(rnk1) + 1;
+    
+    uvec u = find(rnk == bw);
+    bwd = distv(u(0));
+  }
+  vec wtv = tri_wt_vec(distv, bwd);
+  return wtv;
+}
+//------------------------------------------
+//exponential kernel weight
+vec exp_wt_vec(vec distv, double bw)
+>>>>>>> master
 {
   const KERNEL *kerf = GWRKernel + kernel;
   int n = vdist.n_elem;
@@ -429,7 +647,83 @@ vec gw_weight_vec(vec vdist, double bw, int kernel, bool adaptive)
   }
   return wv;
 }
+// Exponential adaptive weights
+vec exp_wt_vec_ad(vec distv, double bw)
+{
+  int n = distv.n_elem;
+  double bwd = bw/n * distv.max();
+  
+  if (bw <= n){
+    // equivalent to R function rank(distv, ties.method='first')
+    uvec rnk1 = sort_index(distv) + 1;
+    uvec rnk = sort_index(rnk1) + 1;
+    
+    uvec u = find(rnk == bw);
+    bwd = distv(u(0));
+  }
+  
+  vec wtv = exp_wt_vec(distv, bwd);
+  return wtv;
+}
+//--------------------------------
+// Boxcar weights 
+vec box_wt_vec(vec distv, double bw)
+{
+  int n = distv.n_elem;
+  vec wtv(n, fill::zeros);
+  
+  uvec u = find(distv <= bw);
+  wtv.elem(u).fill(1);
+  
+  return wtv;
+}
+// Boxcar adaptive weights
+vec box_wt_vec_ad(vec distv, double bw)
+{
+  int n = distv.n_elem;
+  vec wtv;
+  wtv.zeros(n);
+  double bwd = bw;
+  if (bw >= n) bwd = n;
+  // equivalent to R function rank(distv, ties.method='first')
+  uvec rnk1 = sort_index(distv) + 1;
+  uvec rnk = sort_index(rnk1) + 1;
+  
+  uvec u = find(rnk <= bwd);
+  wtv.elem(u).fill(1);
+  
+  return wtv;
+}
+
+
+// For use in gw_weight
+enum string_code{ga, bi, tr, bo, ex};
+string_code hashit (std::string const& inString) {
+  if (inString == "gaussian")
+  {
+    return ga;
+  }
+  if (inString == "bisquare")
+  {
+    return bi;
+  }
+  if (inString == "tricube")
+  {
+    return tr;
+  }
+  if (inString == "boxcar")
+  {
+    return bo;
+  }
+  if (inString == "exponential") 
+  {
+    return ex;
+  }
+  return ga;
+}
+// Geographic weights
 // [[Rcpp::export]]
+<<<<<<< HEAD
 mat gw_weight_mat(mat dist, double bw, int kernel, bool adaptive)
 {
   const KERNEL *kerf = GWRKernel + kernel;
@@ -456,6 +750,56 @@ mat gw_weight_mat(mat dist, double bw, int kernel, bool adaptive)
     }
   }
   return w;
+=======
+vec gw_weight_vec(vec vdist, double bw, std::string kernel, bool adaptive)
+{
+  vec wv;
+  if (adaptive) switch(hashit(kernel)){
+  case ga: wv = gau_wt_vec_ad (vdist, bw);
+  case bi: wv = bis_wt_vec_ad (vdist, bw);
+  case tr: wv = tri_wt_vec_ad (vdist, bw);
+  case bo: wv = box_wt_vec_ad (vdist, bw); 
+  case ex: wv = exp_wt_vec_ad (vdist, bw);
+  }
+  else switch(hashit(kernel)){
+  case ga: wv = gauss_wt_vec (vdist, bw);
+  case bi: wv = bisq_wt_vec (vdist, bw);
+  case tr: wv = tri_wt_vec (vdist, bw);
+  case bo: wv = box_wt_vec (vdist, bw);
+  case ex: wv = exp_wt_vec (vdist, bw);
+  }
+  return wv;
+}
+// [[Rcpp::export]]
+mat gw_weight_mat(mat mdist, double bw, std::string kernel, bool adaptive)
+{
+  int nc = mdist.n_cols;
+  int nr = mdist.n_rows;
+  mat wmat(nr, nc, fill::zeros);
+  if (adaptive) {
+    for (int c = 0; c < nc; c++) {
+      switch(hashit(kernel)){
+      case ga: wmat.col(c) = gau_wt_vec_ad (mdist.col(c), bw);
+      case bi: wmat.col(c) = bis_wt_vec_ad (mdist.col(c), bw);
+      case tr: wmat.col(c) = tri_wt_vec_ad (mdist.col(c), bw);
+      case bo: wmat.col(c) = box_wt_vec_ad (mdist.col(c), bw); 
+      case ex: wmat.col(c) = exp_wt_vec_ad (mdist.col(c), bw);
+      }
+    }
+  } 
+  else {
+    for (int c = 0; c < nc; c++) {
+      switch(hashit(kernel)){
+      case ga: wmat.col(c) = gauss_wt_vec (mdist.col(c), bw);
+      case bi: wmat.col(c) = bisq_wt_vec (mdist.col(c), bw);
+      case tr: wmat.col(c) = tri_wt_vec (mdist.col(c), bw);
+      case bo: wmat.col(c) = box_wt_vec (mdist.col(c), bw); 
+      case ex: wmat.col(c) = exp_wt_vec (mdist.col(c), bw);
+      }
+    }
+  }
+  return wmat;
+>>>>>>> master
 }
 //---------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -664,6 +1008,7 @@ mat Ci_mat(mat x, vec w)
 }
 
 //Local R2 values for GWR
+<<<<<<< HEAD
 // [[Rcpp::export]]
 vec gw_local_r2(mat dp, vec dybar2, vec dyhat2, bool dm_given, mat dmat, double p, double theta, bool longlat, double bw, int kernel, bool adaptive) {
   int n = dp.n_rows;
@@ -704,6 +1049,113 @@ mat gw_reg_2(mat x, vec y, vec w)
 // [[Rcpp::export]]
 mat gwr_q(mat x, vec y, 
                 mat dMat, double bw, int kernel, bool adaptive)
+{
+  int n =  dMat.n_cols;
+  int m =  x.n_cols;
+  mat beta(n, m);
+  vec distv;
+  vec w;
+  for (int i = 0; i < n; i++) {
+    distv = dMat.col(i);
+    w = gw_weight_vec(distv, bw, kernel, adaptive);
+    beta.row(i) = gw_reg_2(x, y, w);
+  }
+  return beta;
+}
+//---------------------------------------------------------------------------------------------------------------------------------------------------
+
+//--------------------------------------Scalable GWR clalibration ---------------------------------------------------------------------------------
+// Scalable GWR bandwidth optimization via CV approach
+// [[Rcpp::export]]
+double scgwr_loocv(vec target, mat x, vec y, int bw, int poly, mat Mx0, mat My0, mat XtX, mat XtY) {
+  int n = x.n_rows, k = x.n_cols, poly1 = poly + 1;
+  double b = target(0) * target(0), a = target(1) * target(1);
+  vec R0 = vec(poly1) * b;
+  for (int p = 1; p < poly1; p++) {
+    R0(p) = pow(b, p + 1);
+  }
+  vec Rx(k*k*poly1, fill::zeros), Ry(k*poly1, fill::zeros);
+  for (int p = 0; p < poly1; p++) {
+    for (int k2 = 0; k2 < k; k2++) {
+      for (int k1 = 0; k1 < k; k1++) {
+        int xindex = k1*poly1*k + p*k + k2;
+        Rx(xindex) = R0(p);
+      }
+      int yindex = p*k + k2;
+      Ry(yindex) = R0(p);
+    }
+  }
+  mat Mx = Rx * mat(1, n, fill::ones) % Mx0, My = Ry * mat(1, n, fill::ones) % My0;
+  vec yhat(n, 1, fill::zeros);
+  for (int i = 0; i < n; i++) {
+    mat sumMx(k, k, fill::zeros);
+    vec sumMy(k, fill::zeros);
+    for (int k2 = 0; k2 < k; k2++) {
+      for (int p = 0; p < poly1; p++) {
+        for (int k1 = 0; k1 < k; k1++) {
+          int xindex = k1*poly1*k + p*k + k2;
+          sumMx(k1, k2) += Mx(xindex, i);
+        }
+        int yindex = p*k + k2;
+        sumMy(k2) += My(yindex, i);
+      }
+    }
+    sumMx = sumMx + a * XtX;
+    sumMy = sumMy + a * XtY;
+    if (det(sumMx) < 1e-10) {
+      return 1e6;
+    } else {
+      mat beta = solve(sumMx, sumMy);
+      yhat.row(i) = x.row(i) * beta;
+    }
+  }
+  return sum((y - yhat) % (y - yhat));
+}
+//Scalable GWR C++ functions
+=======
+>>>>>>> master
+// [[Rcpp::export]]
+vec gw_local_r2(mat dp, vec dybar2, vec dyhat2, bool dm_given, mat dmat, double p, double theta, bool longlat, double bw, int kernel, bool adaptive) {
+  int n = dp.n_rows;
+  vec localR2(n, fill::zeros);
+  for (int i = 0; i < n; i++) {
+    mat d = dm_given ? dmat.col(i) : gw_dist(dp, dp, i, p, theta, longlat, false);
+    mat w = gw_weight(d, bw, kernel, adaptive);
+    double tss = sum(dybar2 % w);
+    double rss = sum(dyhat2 % w);
+    localR2(i) = (tss - rss) / tss;
+  }
+  return localR2;
+}
+//BIC calculation
+// [[Rcpp::export]]
+double BIC(vec y, mat x, mat beta, vec s_hat)
+{
+  double ss = rss(y, x, beta);
+  double n = (double)x.n_rows;
+  double BIC = n * log(ss / n) + n * log(2 * datum::pi) + log(n) * s_hat(0);
+  return BIC;
+}
+<<<<<<< HEAD
+=======
+
+// GWR calibration, returns betas only
+// [[Rcpp::export]]
+mat gw_reg_2(mat x, vec y, vec w)
+{
+  mat beta;
+  mat wspan(1, x.n_cols, fill::ones);
+  mat xtw = trans(x % (w * wspan));
+  mat xtwx = xtw * x;
+  mat xtwy = trans(x) * (w % y);
+  mat xtwx_inv = inv(xtwx);
+  beta = xtwx_inv * xtwy;
+  return beta.t();
+}
+// C++ version of gwr.q, used in gwr.mixed
+// [[Rcpp::export]]
+mat gwr_q(mat x, vec y, 
+                mat dMat, double bw, std::string kernel, bool adaptive)
 {
   int n =  dMat.n_cols;
   int m =  x.n_cols;
@@ -814,6 +1266,7 @@ List scgwr_pre(mat x, vec y, int bw, int poly, double b0, mat g0, mat neighbour)
     Named("My0") = My0
   );
 }
+>>>>>>> master
 // Scalable GWR calibration
 // [[Rcpp::export]]
 List scgwr_reg(mat x, vec y, int bw, int poly, mat G0, mat Mx0, mat My0, mat XtX, mat XtY, mat neighbour, vec parameters) {
@@ -1175,7 +1628,11 @@ vec e_vec(int m, int n){
 
 // [[Rcpp::export]]
 double gwr_mixed_trace(mat x1, mat x2, vec y, 
+<<<<<<< HEAD
                        mat dMat, double bw, int kernel, bool adaptive){
+=======
+                       mat dMat, double bw, std::string kernel, bool adaptive){
+>>>>>>> master
   int i;
   int n = x1.n_rows;
   int nc2 = x2.n_cols;
@@ -1186,6 +1643,10 @@ double gwr_mixed_trace(mat x1, mat x2, vec y,
   vec hii(n, fill::zeros);
   mat m(1,n);
   double s1, s2;
+<<<<<<< HEAD
+=======
+  
+>>>>>>> master
   for (i = 0; i < nc2; i++) {
     mtemp = gwr_q(x1, x2.col(i), dMat, bw, kernel, adaptive);
     x3.col(i) = x2.col(i) - fitted(x1, mtemp);
@@ -1195,10 +1656,17 @@ double gwr_mixed_trace(mat x1, mat x2, vec y,
   for (i = 0; i < n; i++) {
     mtemp = gwr_q(x1, e_vec(i, n), dMat, bw, kernel, adaptive); // length n x nc2
     y2 = e_vec(i, n) - fitted(x1, mtemp); // length n
+<<<<<<< HEAD
     model2 = gwr_q(x3, y2, dMat, 100000, 4, true);
     y3 = e_vec(i, n) - fitted(x2, model2);
     model1 = gwr_q(x1, y3, dMat.col(i), bw, kernel, adaptive); // 1 x 1 matrix
     model2 = gwr_q(x3, y2, dMat.col(i), 100000, 4, true); // n x nc2
+=======
+    model2 = gwr_q(x3, y2, dMat, 100000, "boxcar", true);
+    y3 = e_vec(i, n) - fitted(x2, model2);
+    model1 = gwr_q(x1, y3, dMat.col(i), bw, kernel, adaptive); // 1 x 1 matrix
+    model2 = gwr_q(x3, y2, dMat.col(i), 100000, "boxcar", true); // n x nc2
+>>>>>>> master
     s1 = fitted(x1.row(i), model1)(0);  // vector with one element
     s2 = fitted(x2.row(i), model2)(0);  // vector with one element
     hii(i) = s1 + s2;
@@ -1208,7 +1676,11 @@ double gwr_mixed_trace(mat x1, mat x2, vec y,
 // [[Rcpp::export]]
 List gwr_mixed_2(mat x1, mat x2, vec y, 
                        mat dMat, mat dMat_rp,
+<<<<<<< HEAD
                        double bw, int kernel, bool adaptive){
+=======
+                       double bw, std::string kernel, bool adaptive){
+>>>>>>> master
   int i;
   int n = x1.n_rows;
   int nc2 = x2.n_cols;
@@ -1223,10 +1695,17 @@ List gwr_mixed_2(mat x1, mat x2, vec y,
   }
   mtemp = gwr_q(x1, y, dMat, bw, kernel, adaptive);
   y2 = y - fitted(x1, mtemp);
+<<<<<<< HEAD
   model2 = gwr_q(x3, y2, dMat, 100000, 4, true);
   
   model1 = gwr_q(x1, y-fitted(x2, model2), dMat_rp, bw, kernel, adaptive);
   model2 = gwr_q(x3, y2, dMat_rp, 100000, 4, true);
+=======
+  model2 = gwr_q(x3, y2, dMat, 100000, "boxcar", true);
+  
+  model1 = gwr_q(x1, y-fitted(x2, model2), dMat_rp, bw, kernel, adaptive);
+  model2 = gwr_q(x3, y2, dMat_rp, 100000, "boxcar", true);
+>>>>>>> master
   
   return List::create(
     Named("local") = model1,
