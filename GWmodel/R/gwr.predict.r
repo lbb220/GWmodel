@@ -131,7 +131,7 @@ gwr.predict<-function(formula, data, predictdata, bw, kernel="bisquare",adaptive
     betas1[i,]<-gw.resi[[1]]
     xtxinv[i,,] <-gw.resi[[2]]
   }
-  gw.predict <- gw.fitted(x.p, betas1)
+  gw.predict <- gw_fitted(x.p, betas1)
   ###### fit the model
   betas2 <- matrix(nrow=fd.n, ncol=var.n)
   S <- matrix(nrow=fd.n, ncol=fd.n)
@@ -219,7 +219,7 @@ gwr.predict<-function(formula, data, predictdata, bw, kernel="bisquare",adaptive
 ##Author: BL	
 print.gwrm.pred<-function(x, ...)
 {
-  if(class(x) != "gwrm.pred") stop("It's not a gwm object")
+  if(!inherits(x, "gwrm.pred")) stop("It's not a gwm object")
   cat("   ***********************************************************************\n")
   cat("   *                       Package   GWmodel                             *\n")
   cat("   ***********************************************************************\n")

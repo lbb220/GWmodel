@@ -374,7 +374,7 @@ gwr.bic<-function(bw, X, Y, kernel="bisquare",adaptive=FALSE, dp.locat, p=2, the
     if(!inherits(res, "try-error")) {
       betas <- res$betas
       s_hat <- res$s_hat
-      BIC.value <- BIC(Y, X, betas, s_hat)
+      BIC.value <- gw_BIC(Y, X, betas, s_hat)
     }
     else BIC.value <- Inf
   } else if (parallel.method == "omp") {
@@ -385,7 +385,7 @@ gwr.bic<-function(bw, X, Y, kernel="bisquare",adaptive=FALSE, dp.locat, p=2, the
     if(!inherits(res, "try-error")) {
       betas <- res$betas
       s_hat <- res$s_hat
-      BIC.value <- BIC(Y, X, betas, s_hat)
+      BIC.value <- gw_BIC(Y, X, betas, s_hat)
     }
     else BIC.value <- Inf
   } else if (parallel.method == "cuda") {
@@ -396,7 +396,7 @@ gwr.bic<-function(bw, X, Y, kernel="bisquare",adaptive=FALSE, dp.locat, p=2, the
     if(!inherits(res, "try-error")) {
       betas <- res$betas
       s_hat <- res$s_hat
-      BIC.value <- BIC(Y, X, betas, s_hat)
+      BIC.value <- gw_BIC(Y, X, betas, s_hat)
     }
     else BIC.value <- Inf
   } else if (parallel.method == "cluster") {
@@ -414,7 +414,7 @@ gwr.bic<-function(bw, X, Y, kernel="bisquare",adaptive=FALSE, dp.locat, p=2, the
         betas = betas + res$betas
         s_hat = s_hat + res$s_hat
       }
-      BIC.value <- BIC(Y, X, betas, s_hat)
+      BIC.value <- gw_BIC(Y, X, betas, s_hat)
     } else BIC.value <- Inf
   } else {
     s_hat <- numeric(2)
@@ -436,7 +436,7 @@ gwr.bic<-function(bw, X, Y, kernel="bisquare",adaptive=FALSE, dp.locat, p=2, the
       }  
     }
     if (!any(is.infinite(s_hat))) {
-      BIC.value <- BIC(Y, X, betas, s_hat)
+      BIC.value <- gw_BIC(Y, X, betas, s_hat)
     } else BIC.value <-Inf
   }
   if(is.nan(BIC.value)) BIC.value <- Inf

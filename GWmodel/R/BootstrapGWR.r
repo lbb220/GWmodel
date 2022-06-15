@@ -62,12 +62,12 @@ gwr.bootstrap <- function(formula, data, kernel="bisquare",approach="AIC", R=99,
 	 gwr.model <- gwr.basic(formula,data=sp.data,bw=bw,kernel=kernel, adaptive=adaptive,dMat=dMat, parallel.method=parallel.method,parallel.arg=parallel.arg) 
    #####
 	# For modified test statistic
-    ols.bst <- parametric.bs(ols.model,dep.var,dp.locat,W.adj,gwrtvar,R=R, report=n.sim.rep,formula=formula, approach=approach, kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose)
-	err.bst <- parametric.bs(err.model,dep.var,dp.locat,W.adj,gwrtvar,R=R, report=n.sim.rep,formula=formula, approach=approach, kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose)	
-	sma.bst <- parametric.bs(sma.model,dep.var,dp.locat,W.adj,gwrtvar,R=R, report=n.sim.rep,formula=formula, approach=approach, kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose)
-    lag.bst <- parametric.bs(lag.model,dep.var,dp.locat,W.adj,gwrtvar,R=R, report=n.sim.rep,formula=formula, approach=approach, kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose)
+    ols.bst <- parametric.bs(ols.model,dep.var,dp.locat,W.adj,gwrtvar,R=R, report=n.sim.rep,formula=formula, approach=approach, kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose,parallel.method=parallel.method,parallel.arg=parallel.arg)
+	err.bst <- parametric.bs(err.model,dep.var,dp.locat,W.adj,gwrtvar,R=R, report=n.sim.rep,formula=formula, approach=approach, kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose,parallel.method=parallel.method,parallel.arg=parallel.arg)	
+	sma.bst <- parametric.bs(sma.model,dep.var,dp.locat,W.adj,gwrtvar,R=R, report=n.sim.rep,formula=formula, approach=approach, kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose,parallel.method=parallel.method,parallel.arg=parallel.arg)
+    lag.bst <- parametric.bs(lag.model,dep.var,dp.locat,W.adj,gwrtvar,R=R, report=n.sim.rep,formula=formula, approach=approach, kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose,parallel.method=parallel.method,parallel.arg=parallel.arg)
     sp.data <- SpatialPointsDataFrame(dp.locat,data, match.ID=FALSE)
-	actual.t = gwrtvar(sp.data, formula,approach, kernel, adaptive,dMat,verbose=verbose) 
+	actual.t = gwrtvar(sp.data, formula,approach, kernel, adaptive,dMat,verbose=verbose, parallel.method=parallel.method,parallel.arg=parallel.arg) 
 	results.t = rbind(ci.bs(ols.bst,0.95),pval.bs(ols.bst,actual.t),				  
 				  ci.bs(err.bst,0.95),pval.bs(err.bst,actual.t),
 				  ci.bs(sma.bst,0.95),pval.bs(sma.bst,actual.t),
@@ -75,10 +75,10 @@ gwr.bootstrap <- function(formula, data, kernel="bisquare",approach="AIC", R=99,
 	rownames(results.t) = c("   Modified statistic for MLR at 95% level","   p value to accept null hypothese(MLR)","   Modified statistic for ERR at 95%","   p value to accept null hypothese (ERR)",
 	"   Modified statistic for SMA at 95% level","   p value to accept null hypothese (SMA)","   Modified statistic for LAG at 95% level","   p value to accept null hypothese (LAG)")
 	###Localized test statistic
-	err.bsm <- parametric.bs.local(err.model,dep.var,dp.locat,W.adj,gwrt.err,R=R,report=n.sim.rep,formula=formula, glw, approach=approach, kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose)
-	mlr.bsm <- parametric.bs.local(ols.model,dep.var,dp.locat,W.adj,gwrt.mlr,R=R,report=n.sim.rep,formula=formula, approach=approach, kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose)
-	sma.bsm <- parametric.bs.local(sma.model,dep.var,dp.locat,W.adj,gwrt.sma,R=R,report=n.sim.rep,formula=formula, glw,approach=approach, kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose)
-  lag.bsm <- parametric.bs.local(lag.model,dep.var,dp.locat,W.adj,gwrt.lag,R=R,report=n.sim.rep,formula=formula, glw,approach=approach, kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose)
+	err.bsm <- parametric.bs.local(err.model,dep.var,dp.locat,W.adj,gwrt.err,R=R,report=n.sim.rep,formula=formula, glw, approach=approach, kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose,parallel.method=parallel.method,parallel.arg=parallel.arg)
+	mlr.bsm <- parametric.bs.local(ols.model,dep.var,dp.locat,W.adj,gwrt.mlr,R=R,report=n.sim.rep,formula=formula, approach=approach, kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose,parallel.method=parallel.method,parallel.arg=parallel.arg)
+	sma.bsm <- parametric.bs.local(sma.model,dep.var,dp.locat,W.adj,gwrt.sma,R=R,report=n.sim.rep,formula=formula, glw,approach=approach, kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose,parallel.method=parallel.method,parallel.arg=parallel.arg)
+  lag.bsm <- parametric.bs.local(lag.model,dep.var,dp.locat,W.adj,gwrt.lag,R=R,report=n.sim.rep,formula=formula, glw,approach=approach, kernel=kernel, adaptive=adaptive,dMat=dMat,verbose=verbose,parallel.method=parallel.method,parallel.arg=parallel.arg)
   actual.m.err <- gwrt.err(sp.data,formula,glw,approach, kernel, adaptive,dMat,verbose=verbose,parallel.method=parallel.method,parallel.arg=parallel.arg)
 	actual.m.mlr <- gwrt.mlr(sp.data,formula,approach, kernel, adaptive,dMat,verbose=verbose,parallel.method=parallel.method,parallel.arg=parallel.arg)
 	actual.m.sma <- gwrt.sma(sp.data,formula,glw,approach, kernel, adaptive,dMat,verbose=verbose,parallel.method=parallel.method,parallel.arg=parallel.arg)
@@ -147,7 +147,7 @@ gwr.bootstrap <- function(formula, data, kernel="bisquare",approach="AIC", R=99,
 ######################
 print.gwrbsm <- function(x, ...)
 {
-  if(class(x) != "gwrbsm") stop("It's not a gwm object")
+  if(!inherits(x, "gwrbsm")) stop("It's not a gwm object")
   cat("   ***********************************************************************\n")
   cat("   *                       Package   GWmodel                             *\n")
   cat("   ***********************************************************************\n")
@@ -289,9 +289,9 @@ generate.lm.data <- function(obj,W,dep.var) {
 		x <- data.frame(x)}
 # What kind of model is it
 	model.type <- function(obj) {
-		if (class(obj) == "lm") return("lm")
-		if (class(obj) == "spautolm") return("spautolm")
-		if (class(obj) != "sarlm") stop("Unsupported regression type.")
+		if (inherits(obj, "lm")) return("lm")
+		if (inherits(obj, "spautolm")) return("spautolm")
+		if (!inherits(obj, "sarlm")) stop("Unsupported regression type.")
 		if (obj$type=="error") return("errorsarlm")
 		if (obj$type=="lag") return("lagsarlm") }
 # Do the simulation
@@ -457,7 +457,7 @@ bw.gwr3<-function(formula, data, approach="CV",kernel="bisquare",adaptive=FALSE,
   if(approach == "bic" || approach == "BIC")
       bw <- gold(gwr.bic, lower, upper, adapt.bw = adaptive, x, y, kernel, adaptive, dp.locat, 2, 0, FALSE, dMat, verbose, parallel.method, parallel.arg)
   else if(approach == "aic" || approach == "AIC" || approach == "AICc")
-      bw <- gold(gwr.aic, lower, upper, adapt.bw = adaptive, x, y, kernel, adaptive, dp.locat, 2, 0, FALSE, parallel.method, parallel.arg)    
+      bw <- gold(gwr.aic, lower, upper, adapt.bw = adaptive, x, y, kernel, adaptive, dp.locat, 2, 0, FALSE, dMat, verbose, parallel.method, parallel.arg)    
   else 
       bw <- gold(gwr.cv, lower, upper, adapt.bw = adaptive, x, y, kernel, adaptive, dp.locat, 2, 0, FALSE, dMat, verbose, parallel.method, parallel.arg)
   # ## stop cluster

@@ -260,7 +260,7 @@ gwr.lcr <-function(formula, data, regression.points, bw, kernel="bisquare",
 ##Author: BL
 print.gwrlcr<-function(x, ...)
 {
-  if(class(x) != "gwrlcr") stop("It's not a gwrlcr object")
+  if( !inherits(x, "gwrlcr")) stop("It's not a gwrlcr object")
   cat("   ***********************************************************************\n")
   cat("   *                       Package   GWmodel                             *\n")
   cat("   ***********************************************************************\n")
@@ -419,6 +419,7 @@ bw.gwr.lcr <-function(formula, data, kernel="bisquare",
       if (dim.dMat[1]!=dp.n||dim.dMat[2]!=rp.n)
          stop("Dimensions of dMat are not correct")
     }
+    print(dim(dMat))
    #########Find the range for the bandwidth selection
   if(adaptive)
   {

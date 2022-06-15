@@ -107,8 +107,8 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
   dp.n<-nrow(data)
   betas <- matrix(0, nrow=rp.n, ncol=var.n)
   if (hatmatrix) {
-    betas.SE <-matrix(nrow=rp.n, ncol=var.n)
-    betas.TV <-matrix(nrow=rp.n, ncol=var.n)
+    betas.SE <-matrix(0, nrow=rp.n, ncol=var.n)
+    betas.TV <-matrix(0,nrow=rp.n, ncol=var.n)
   }
   idx1 <- match("(Intercept)", colnames(x))
   if(!is.na(idx1))
@@ -252,7 +252,7 @@ gwr.basic <- function(formula, data, regression.points, bw, kernel="bisquare", a
     tr.S <- s_hat[1]
     tr.StS <- s_hat[2]
     RSS.gw <- diags[5]
-    yhat <- gw.fitted(x, betas)
+    yhat <- gw_fitted(x, betas)
     residual <- y - yhat
     CV <- numeric(dp.n)
     local.R2 <- numeric(dp.n)
@@ -393,7 +393,7 @@ reg.combine <- function(before, item) {
 ##Author: BL
 print.gwrm<-function(x, ...)
 {
-  if(class(x) != "gwrm") stop("It's not a gwm object")
+  if(!inherits(x, "gwrm")) stop("It's not a gwm object")
   cat("   ***********************************************************************\n")
   cat("   *                       Package   GWmodel                             *\n")
   cat("   ***********************************************************************\n")
@@ -697,8 +697,7 @@ F1234.test<-function(F.test.parameters=list())
 	     {
 	       dist.vj<- gw.dist(dp.locat,dp.locat, focus=j, p, theta, longlat)
 	     }
-        
-		    wj <- gw.weight(dist.vj,bw,kernel,adaptive)
+		    wj <- as.numeric(gw.weight(dist.vj,bw,kernel,adaptive))
 		    B[j,] <- ek[i,] %*% solve(t(x)%*%diag(wj)%*%x) %*%t(x) %*% diag(wj)
 	   }
 	   BJ<- (1/dp.n)*(t(B)%*%(iden-(1/dp.n)*J)%*%B)

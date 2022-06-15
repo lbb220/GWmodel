@@ -57,7 +57,7 @@ gwr.model.selection<-function(DeVar=NULL,InDeVars=NULL, data=list(),bw=NULL,appr
     for (j in 1:(var.n - i + 1)) {
       vars.j <- c(level.vars, InDeVars.Sub[j])
       fml <- Generate.formula(DeVar, vars.j)
-	    cat("Now calbrating the model: \n", fml, "\n")
+	    cat("Now calibrating the model: \n", fml, "\n")
 	    matL <- extract.mat(fml, data)
 	    y <- matL[[1]]
 	    x <- matL[[2]]
@@ -188,7 +188,7 @@ model.selection.gwr <-function(DeVar=NULL,InDeVars=NULL, data=list(),bw=NULL,app
     for (j in 1:(var.n - i + 1)) {
       vars.j <- c(level.vars, InDeVars.Sub[j])
       fml <- Generate.formula(DeVar, vars.j)
-      cat("Now calbrating the model: \n", fml, "\n")
+      cat("Now calibrating the model: \n", fml, "\n")
       matL <- extract.mat(fml, data)
       y <- matL[[1]]
       x <- matL[[2]]

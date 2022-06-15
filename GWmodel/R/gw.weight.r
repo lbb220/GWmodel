@@ -25,7 +25,7 @@ gw.weight <-function(vdist,bw,kernel,adaptive=FALSE){
   }
   else
   {
-    wgt <- gw_weight_vec(vdist,bw,kernel,adaptive)
+    wgt <- as.vector(gw_weight_vec(vdist,bw,kernel,adaptive))
   }
     
   wgt

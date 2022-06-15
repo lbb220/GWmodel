@@ -231,7 +231,7 @@ gwpca <- function (data, elocat, vars, k = 2, robust = FALSE, kernel = "bisquare
 ##Author: BL
 print.gwpca<-function(x, ...)
 {
-  if(class(x) != "gwpca") stop("It's not a gwpca object")
+  if(!inherits(x, "gwpca")) stop("It's not a gwpca object")
   cat("   ***********************************************************************\n")
   cat("   *                       Package   GWmodel                             *\n")
   cat("   ***********************************************************************\n")

@@ -197,7 +197,7 @@ gwda <- function(formula, data, predict.data,validation = T, COV.gw=T,
 ##Author: BL	
 print.gwda<-function(x, ...)
 {
-  if(class(x) != "gwda") stop("It's not a gwda object")
+  if(!inherits(x, "gwda")) stop("It's not a gwda object")
   cat("   ***********************************************************************\n")
   cat("   *                       Package   GWmodel                             *\n")
   cat("   ***********************************************************************\n")

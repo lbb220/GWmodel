@@ -204,8 +204,9 @@ system.time(
 bw.CV.cuda <- bw.gwr(data = simulate.data, formula = y ~ x1 + x2 + x3, approach="CV", 
                      kernel = "gaussian", adaptive = adaptive, parallel.method = "cuda", 
                      parallel.arg = 6*16)
-model.cuda <- gwr.model.selection(DeVar = "y", InDeVars = c("x1", "x2", "x3"), data = simulate.data, 
-                                 bw = bw.CV.cuda, approach="AIC", kernel = "gaussian", adaptive = T, 
+model.cuda <- gwr.model.selection(DeVar = "y", InDeVars = c("x1", "x2", "x3"), 
+                                 data = simulate.data, bw = bw.CV.cuda, approach="AIC", 
+                                 kernel = "gaussian", adaptive = T, 
                                  parallel.method = "cuda", parallel.arg = 6*16)
 system.time(
   betas.cuda <- gwr.basic(data = simulate.data, formula = y ~ x1 + x2 + x3, bw = bw.CV.cuda, 

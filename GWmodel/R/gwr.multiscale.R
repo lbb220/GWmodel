@@ -10,7 +10,7 @@ gw.fitted <- function(X, beta) {
 }
 
 gwr.multiscale <- function(formula, data, kernel="bisquare", adaptive=FALSE, criterion="dCVR", max.iterations=2000,threshold=0.00001, dMats, var.dMat.indx, p.vals, theta.vals,longlat=FALSE,
-                           bws0, bw.seled, approach = "AIC", bws.thresholds, bws.reOpts=5, verbose=F, hatmatrix=T, 
+                           bws0=NULL, bw.seled, approach = "AIC", bws.thresholds, bws.reOpts=5, verbose=F, hatmatrix=T, 
                            predictor.centered=rep(T, length(bws0)-1),nlower = 10, parallel.method=F,parallel.arg=NULL)
 {
   ##Record the start time
@@ -175,7 +175,7 @@ gwr.multiscale <- function(formula, data, kernel="bisquare", adaptive=FALSE, cri
     stop("dMats are not correct")
   }  
   ############################### Intialize the bandwidth
-  if(missing(bws0))
+  if(is.null(bws0))
   {
     bws0 <- numeric(var.n)
     cat("------ Calculate the initial bandwidths for each independent variable ------\n")
@@ -218,6 +218,9 @@ gwr.multiscale <- function(formula, data, kernel="bisquare", adaptive=FALSE, cri
     Shat <- matrix(nrow=dp.n, ncol=dp.n)
     S.arrays <- array(dim=c(var.n, dp.n, dp.n))
     C <- array(dim=c(dp.n,var.n,dp.n))
+    ####SEs and t-values
+    Beta_SE <- matrix(nrow=dp.n, ncol=var.n)
+    Beta_TV <- matrix(nrow=dp.n, ncol=var.n)
   }
   
   res <- gwr.q2(x1, y, dp.locat, adaptive=adaptive, hatmatrix = hatmatrix,bw=bw.int0, kernel=kernel,dMat=dMat)
@@ -243,7 +246,7 @@ gwr.multiscale <- function(formula, data, kernel="bisquare", adaptive=FALSE, cri
   criterion.val <- 10000000  
   #yhat.i <- betas*x
   #print(yhat.i)
-  resid.i <- y - fitted(x1, betas)
+  resid.i <- y - gw_fitted(x1, betas)
   RSS0 <- sum(resid.i^2)
   RSS1 <- 0
   RSS.vals <- c(RSS0, RSS1, criterion.val)
@@ -304,13 +307,13 @@ gwr.multiscale <- function(formula, data, kernel="bisquare", adaptive=FALSE, cri
       #AICcs[i] <- gwr.aic(bw.i, matrix(x[,i], ncol=1), y.i, kernel, adaptive, dp.locat, dMat=dMat, verbose=F)
       #yhat.i[,i] <- betai*x[,i]
       betas[,i] <- betai
-      resid.i <- y - fitted(x1, betas)
+      resid.i <- y - gw_fitted(x1, betas)
       #resid.i <- ehat(y.i, matrix(x[,i], ncol=1), matrix(betas[,i], ncol=1))
       #betas[,i] <- betai
     }
     bws.vars <- rbind(bws.vars, bws0)
     #AICc.vals <- rbind(AICc.vals, AICcs) 
-    RSS1 <- sum((y - fitted(x1, betas))^2)   
+    RSS1 <- sum((y - gw_fitted(x1, betas))^2)   
     if(criterion=="CVR")
     {
       criterion.val <- abs(RSS1-RSS0)
@@ -327,7 +330,7 @@ gwr.multiscale <- function(formula, data, kernel="bisquare", adaptive=FALSE, cri
     ieration <- ieration+1            
   }
   #####Output
-  yhat <- fitted(x1, betas)
+  yhat <- gw_fitted(x1, betas)
   residual <- y - yhat
   GW.diagnostic <- NA
   ###############
@@ -357,6 +360,15 @@ gwr.multiscale <- function(formula, data, kernel="bisquare", adaptive=FALSE, cri
 	R2.val <- mgwr.diag[[6]]
 	R2adj <- mgwr.diag[[7]]
 	BIC <- mgwr.diag[[10]]
+  tr.Shat <- mgwr.diag[[8]]
+   ####Calculate the SEs and t-values
+    sigma.hat11 <- RSS.gw/(dp.n-tr.Shat)
+    for(i in 1:var.n)
+    {
+      Ci <- diag(1/x[,i])%*%S.arrays[i,,]
+      Beta_SE[,i] <- sqrt(diag(Ci%*%t(Ci)*sigma.hat11))
+      Beta_TV[,i] <- betas[,i]/Beta_SE[,i]
+    }
 	GW.diagnostic<-list(RSS.gw=RSS.gw,AICc=AICc,AIC=AIC,BIC=BIC,R2.val=R2.val, R2adj = R2adj, edf=edf, enp=enp)
   }
   #sigma.hat11<-RSS.gw/(dp.n-2*tr.Shat+tr.StShat)
@@ -372,9 +384,17 @@ gwr.multiscale <- function(formula, data, kernel="bisquare", adaptive=FALSE, cri
     betas[,idx1] <- beta0
   }
   ############################
-  vdgwr.df <- data.frame(betas, yhat, residual)
-  #colnames(vdgwr.df) <- c(colnames(x), "yhat", "residual",paste(colnames(betas), "SE", sep="_"), paste(colnames(betas), "TV", sep="_"))
-  colnames(vdgwr.df) <- c(colnames(x), "yhat", "residual")
+  if(hatmatrix)
+  {
+    vdgwr.df <- data.frame(betas, yhat, residual, Beta_SE, Beta_TV)
+    colnames(vdgwr.df) <- c(colnames(x), "yhat", "residual", paste(colnames(x), "SE", sep="_"),paste(colnames(x), "TV", sep="_"))
+  }
+  else
+  {
+    vdgwr.df <- data.frame(betas, yhat, residual)
+    #colnames(vdgwr.df) <- c(colnames(x), "yhat", "residual",paste(colnames(betas), "SE", sep="_"), paste(colnames(betas), "TV", sep="_"))
+    colnames(vdgwr.df) <- c(colnames(x), "yhat", "residual")
+  }
   griddedObj <- F
   if (is(regression.points, "Spatial"))
   { 
@@ -410,7 +430,7 @@ gwr.multiscale <- function(formula, data, kernel="bisquare", adaptive=FALSE, cri
 ##Author: BL
 print.multiscalegwr<-function(x, ...)
 {
-  if(class(x) != "multiscalegwr") stop("It's not a multi-scale gwr object")
+  if(!inherits(x, "multiscalegwr")) stop("It's not a multi-scale gwr object")
   cat("   ***********************************************************************\n")
   cat("   *                       Package   GWmodel                             *\n")
   cat("   ***********************************************************************\n")
@@ -485,7 +505,7 @@ gwr.backfit <- function(x, y, betas,dp.locat,rp.locat,hatmatrix, criterion="CVR"
    dp.n <- nrow(x)
    rp.n <- nrow(rp.locat)
    criterion.val <- 10000000
-   resid.i <- y - fitted(x, betas)
+   resid.i <- y - gw_fitted(x, betas)
    #resid.i <- ehat(y, x, betas)
    RSS0 <- sum(resid.i^2)
    RSS1 <- 0
@@ -517,7 +537,7 @@ gwr.backfit <- function(x, y, betas,dp.locat,rp.locat,hatmatrix, criterion="CVR"
        betas[,i] <- betai
      }
      #RSS1 <- rss(y,x,betas)
-     RSS1 <- sum((y - fitted(x, betas))^2)   
+     RSS1 <- sum((y - gw_fitted(x, betas))^2)   
      if(criterion=="CVR")
      {
          #RSS1 <- sum((y - gwr.fitted(x, betas))^2)

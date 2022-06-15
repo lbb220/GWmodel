@@ -233,7 +233,7 @@ gwss <- function (data, summary.locat, vars, kernel = "bisquare", adaptive = FAL
 #Author: Binbin Lu, Isabella Gollini
 print.gwss<-function(x, ...)
 {
-    if (class(x) != "gwss") 
+    if (!inherits(x, "gwss")) 
         stop("It's not a lss object")
     cat("   ***********************************************************************\n")
     cat("   *                       Package   GWmodel                             *\n")

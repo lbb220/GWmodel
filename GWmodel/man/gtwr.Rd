@@ -4,12 +4,6 @@
 \alias{ti.distv}
 \alias{ti.distm}
 \alias{ti.dist}
-\alias{get.before.ti}
-\alias{get.ts}
-\alias{get.uloat}
-\alias{sdist.mat}
-\alias{tdist.mat}
-\alias{st.dist}
 \title{Geographically and Temporally Weighted Regression}
 \description{
   A function for calibrating a Geographically and Temporally Weighted Regression 
@@ -48,7 +42,7 @@ gtwr(formula, data, regression.points, obs.tv, reg.tv, st.bw, kernel="bisquare",
   \item{t.units}{	character string to define time unit}
   \item{ksi}{an parameter between 0 and PI for calculating spatio-temporal distance, 
              see details in Wu et al. (2014)} 
-  \item{st.dMat}{a pre-specified spatio-temporal distance matrix}
+  \item{st.dMat}{a pre-specified spatio-temporal distance matrix, and can be calculated via the function \link{st.dist}}
 }
 \note{
 The function implements GTWR model proposed by Huang et al. (2010) and 

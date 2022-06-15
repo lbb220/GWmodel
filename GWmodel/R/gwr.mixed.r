@@ -165,7 +165,7 @@ gwr.mixed <- function(formula, data, regression.points, fixed.vars,intercept.fix
       model2 <-gwr.mixed.2.fast(x1, x2, y, adaptive=adaptive, bw=bw, 
                 kernel=kernel, dMat=dMat, dMat.rp=dMat)
       #r.ss <- rss(y, cbind(x1,x2), cbind(model2$local, model2$global)) 
-      r.ss <- sum((y - gwr.fitted(model2$global, x2) - gwr.fitted(model2$local,x1))^2)
+      r.ss <- sum((y - gw_fitted(model2$global, x2) - gw_fitted(model2$local,x1))^2)
       n1 <- length(y)
       sigma.aic <- r.ss / n1
       aic <- log(sigma.aic*2*pi) + 1 + 2*(edf + 1)/(n1 - edf - 2)
@@ -210,7 +210,7 @@ gwr.mixed.2 <- function(x1, x2, y, loc, out.loc, adaptive=F, bw=sqrt(var(loc[,1]
    {
       m.temp <-gwr.q(x1, x2[,i], loc, adaptive=adaptive, bw=bw,
                   kernel=kernel, p=p, theta=theta, longlat=longlat, dMat = dMat1)
-      x3 <- cbind(x3,x2[,i]-gw.fitted(x1,m.temp))
+      x3 <- cbind(x3,x2[,i]-gw_fitted(x1,m.temp))
    }
    colnames(x3) <- colnames(x2)
    m.temp <-gwr.q(x1, y, loc, adaptive=adaptive, bw=bw,
@@ -219,7 +219,7 @@ gwr.mixed.2 <- function(x1, x2, y, loc, out.loc, adaptive=F, bw=sqrt(var(loc[,1]
    
    model2 <-gwr.q(x3, y2, loc, adaptive=TRUE, bw=1.0e6, kernel="boxcar",
                   p=p, theta=theta, longlat=longlat, dMat = dMat1)
-   fit2 <- gw.fitted(x2,model2)
+   fit2 <- gw_fitted(x2,model2)
    model1 <-gwr.q(x1, y-fit2, loc, out.loc=out.loc,adaptive=adaptive, bw=bw,
                   kernel=kernel, p=p, theta=theta, longlat=longlat,dMat=dMat)
    if(!missing(out.loc))
@@ -252,7 +252,7 @@ gwr.mixed.trace <- function(x1, x2, y, loc, out.loc, adaptive=F, bw=sqrt(var(loc
    for (i in 1:ncols.2)
      {m.temp <-gwr.q(x1, x2[,i], loc, adaptive=adaptive, bw=bw,
                   kernel=kernel, p=p, theta=theta, longlat=longlat,dMat=dMat1) 
-      x3 <- cbind(x3,x2[,i]-gw.fitted(x1,m.temp))}
+      x3 <- cbind(x3,x2[,i]-gw_fitted(x1,m.temp))}
     
    colnames(x3) <- colnames(x2)
    hii <- NULL
@@ -261,11 +261,11 @@ gwr.mixed.trace <- function(x1, x2, y, loc, out.loc, adaptive=F, bw=sqrt(var(loc
      {
        m.temp <-gwr.q(x1, e.vec(i,dp.n), loc, adaptive=adaptive, bw=bw,
                   kernel=kernel, p=p, theta=theta, longlat=longlat,dMat=dMat1)  
-       y2 <- e.vec(i,dp.n) - gwr.fitted(x1,m.temp)
+       y2 <- e.vec(i,dp.n) - gw_fitted(x1,m.temp)
 
        model2 <-gwr.q(x3,y2, loc,  adaptive=TRUE, bw=1.0e6, kernel="boxcar",
                 p=p, theta=theta, longlat=longlat,dMat=dMat1)
-       fit2 <- gwr.fitted(x2,model2)
+       fit2 <- gw_fitted(x2,model2)
        if(DM.given)
        {
           model1 <-gwr.q(x1, e.vec(i,dp.n)-fit2, loc, out.loc=matrix(loc[i,], ncol=2), adaptive=adaptive, bw=bw,
@@ -282,7 +282,7 @@ gwr.mixed.trace <- function(x1, x2, y, loc, out.loc, adaptive=F, bw=sqrt(var(loc
           model2 <-gwr.q(x3,y2, loc, out.loc=matrix(loc[i,], ncol=2),  adaptive=TRUE, bw=1.0e6, kernel="boxcar",
                         p=p, theta=theta, longlat=longlat)
        }  
-       hii <- c(hii,gwr.fitted(matrix(x1[i,],nrow=1),model1)+gwr.fitted(matrix(x2[i,],nrow=1),model2)) }                   
+       hii <- c(hii,gw_fitted(matrix(x1[i,],nrow=1),model1)+gw_fitted(matrix(x2[i,],nrow=1),model2)) }                   
    sum(hii)
   }
 gwr.mixed.trace.fast <- function(x1, x2, y, adaptive=F, bw,
@@ -292,7 +292,7 @@ gwr.mixed.trace.fast <- function(x1, x2, y, adaptive=F, bw,
 
 print.mgwr <- function(x, ...)
 {
-  if(class(x) != "mgwr") stop("It's not a mgwr object")
+  if(!inherits(x, "mgwr")) stop("It's not a mgwr object")
   cat("   ***********************************************************************\n")
   cat("   *                       Package   GWmodel                             *\n")
   cat("   ***********************************************************************\n")

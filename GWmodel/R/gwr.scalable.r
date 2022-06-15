@@ -246,7 +246,7 @@ gwr.scalable.loocv <- function(target, params) {
     My.list[[i]] <- My.sum[, i] + alpha * XtY
   }
   tryres <- try(Mx.inv <- lapply(Mx.list, solve), silent = TRUE)
-  if (class(tryres) == "try-error") {
+  if (inherits(tryres, "try-error")) {
     error <- 10^10
   } else {
     beta <- t(matrix(unlist(mapply("%*%", Mx.inv, My.list, SIMPLIFY = FALSE)), nrow = var.n, ncol = dp.n))
@@ -258,7 +258,7 @@ gwr.scalable.loocv <- function(target, params) {
 
 print.scgwrm <- function(x, ...)
 {
-  if(class(x) != "scgwrm") stop("It's not a scalable gwm object")
+  if(!inherits(x, "scgwrm")) stop("It's not a scalable gwm object")
   cat("   ***********************************************************************\n")
   cat("   *                       Package   GWmodel                             *\n")
   cat("   ***********************************************************************\n")

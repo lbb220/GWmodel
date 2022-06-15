@@ -3,6 +3,7 @@
 \alias{gwr.q2}
 \alias{print.multiscalegwr}
 \alias{gwr.backfit}
+\alias{gw_fitted}
 \title{Multiscale GWR}
 \description{
 This function implements multiscale GWR to detect variations in regression relationships across

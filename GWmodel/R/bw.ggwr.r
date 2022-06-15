@@ -352,7 +352,6 @@ gwr.poisson.wt<-function(y,x,bw,W.mat, verbose=T)
     llik <- 0.0
     mu <- y + 0.1
     nu <- log(mu)
-    
     if(verbose)
        cat(" Iteration    Log-Likelihood(With bandwidth: ",bw,")\n=========================\n")
     wt2 <- rep(1,dp.n)
@@ -364,7 +363,7 @@ gwr.poisson.wt<-function(y,x,bw,W.mat, verbose=T)
         gwsi<-gw_reg(x,y.adj,W.i*wt2,FALSE,i)
         betas1[i,]<-gwsi[[1]]
      }
-     nu <- gw.fitted(x,betas1)
+     nu <- gw_fitted(x,betas1)
      mu <- exp(nu)
      old.llik <- llik
      #llik <- sum(y*nu - mu - log(gamma(y+1)))
@@ -408,7 +407,7 @@ gwr.binomial.wt<-function(y,x,bw,W.mat, verbose=T)
         gwsi<-gw_reg(x,y.adj,W.i*wt2,FALSE,i)
         betas1[i,]<-gwsi[[1]]
      }
-     nu <- gw.fitted(x,betas1)
+     nu <- gw_fitted(x,betas1)
      mu <- exp(nu)/(1 + exp(nu))
      old.llik <- llik
      llik <- sum(lchoose(n,y) + (n-y)*log(1 - mu/n) + y*log(mu/n))

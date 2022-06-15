@@ -46,14 +46,14 @@ END_RCPP
 }
 
 // GWmodel_gw_weight_vec
-arma::vec gw_weight_vec(arma::vec vdist, double bw, std::string kernel, bool adaptive);
+arma::vec gw_weight_vec(arma::vec vdist, double bw, int kernel, bool adaptive);
 RcppExport SEXP GWmodel_gw_weight_vec(SEXP vdistSEXP, SEXP bwSEXP, SEXP kernelSEXP, SEXP adaptiveSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::vec >::type vdist(vdistSEXP);
     Rcpp::traits::input_parameter< double >::type bw(bwSEXP);
-    Rcpp::traits::input_parameter< std::string >::type kernel(kernelSEXP);
+    Rcpp::traits::input_parameter< int >::type kernel(kernelSEXP);
     Rcpp::traits::input_parameter< bool >::type adaptive(adaptiveSEXP);
     rcpp_result_gen = Rcpp::wrap(gw_weight_vec(vdist, bw, kernel, adaptive));
     return rcpp_result_gen;
@@ -61,14 +61,14 @@ END_RCPP
 }
 
 // GWmodel_gw_weight_mat
-arma::mat gw_weight_mat(arma::mat mdist, double bw, std::string kernel, bool adaptive);
+arma::mat gw_weight_mat(arma::mat mdist, double bw, int kernel, bool adaptive);
 RcppExport SEXP GWmodel_gw_weight_mat(SEXP mdistSEXP, SEXP bwSEXP, SEXP kernelSEXP, SEXP adaptiveSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat >::type mdist(mdistSEXP);
     Rcpp::traits::input_parameter< double >::type bw(bwSEXP);
-    Rcpp::traits::input_parameter< std::string >::type kernel(kernelSEXP);
+    Rcpp::traits::input_parameter< int >::type kernel(kernelSEXP);
     Rcpp::traits::input_parameter< bool >::type adaptive(adaptiveSEXP);
     rcpp_result_gen = Rcpp::wrap(gw_weight_mat(mdist, bw, kernel, adaptive));
     return rcpp_result_gen;
@@ -296,7 +296,7 @@ END_RCPP
 }
 
 // GWmodel_gw_reg_2
-arma::vec gw_reg_2(arma::mat x, arma::vec y, arma::vec w);
+arma::mat gw_reg_2(arma::mat x, arma::vec y, arma::vec w);
 RcppExport SEXP GWmodel_gw_reg_2(SEXP xSEXP, SEXP ySEXP, SEXP wSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -310,7 +310,7 @@ END_RCPP
 }
 
 // GWmodel_gwr_q
-arma::mat gwr_q(arma::mat x, arma::vec y, arma::mat dMat, double bw, std::string kernel, bool adaptive);
+arma::mat gwr_q(arma::mat x, arma::vec y, arma::mat dMat, double bw, int kernel, bool adaptive);
 RcppExport SEXP GWmodel_gwr_q(SEXP xSEXP, SEXP ySEXP, SEXP dMatSEXP, SEXP bwSEXP, SEXP kernelSEXP, SEXP adaptiveSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -319,7 +319,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
     Rcpp::traits::input_parameter< arma::mat >::type dMat(dMatSEXP);
     Rcpp::traits::input_parameter< double >::type bw(bwSEXP);
-    Rcpp::traits::input_parameter< std::string >::type kernel(kernelSEXP);
+    Rcpp::traits::input_parameter< int >::type kernel(kernelSEXP);
     Rcpp::traits::input_parameter< bool >::type adaptive(adaptiveSEXP);
     rcpp_result_gen = Rcpp::wrap(gwr_q(x, y, dMat, bw, kernel, adaptive));
     return rcpp_result_gen;
@@ -731,7 +731,7 @@ END_RCPP
 }
 
 // gwr_mixed_trace
-double gwr_mixed_trace(arma::mat x1, arma::mat x2, arma::vec y, arma::mat dMat, double bw, std::string kernel, bool adaptive);
+double gwr_mixed_trace(arma::mat x1, arma::mat x2, arma::vec y, arma::mat dMat, double bw, int kernel, bool adaptive);
 RcppExport SEXP GWmodel_gwr_mixed_trace(SEXP x1SEXP, SEXP x2SEXP, SEXP ySEXP, SEXP dMatSEXP, SEXP bwSEXP, SEXP kernelSEXP, SEXP adaptiveSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -741,14 +741,14 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
     Rcpp::traits::input_parameter< arma::mat >::type dMat(dMatSEXP);
     Rcpp::traits::input_parameter< double >::type bw(bwSEXP);
-    Rcpp::traits::input_parameter< std::string >::type kernel(kernelSEXP);
+    Rcpp::traits::input_parameter< int >::type kernel(kernelSEXP);
     Rcpp::traits::input_parameter< bool >::type adaptive(adaptiveSEXP);
     rcpp_result_gen = Rcpp::wrap(gwr_mixed_trace(x1, x2, y, dMat, bw, kernel, adaptive));
     return rcpp_result_gen;
 END_RCPP
 }
 // gwr_mixed_2
-List gwr_mixed_2(arma::mat x1, arma::mat x2, arma::vec y, arma::mat dMat, arma::mat dMat_rp, double bw, std::string kernel, bool adaptive);
+List gwr_mixed_2(arma::mat x1, arma::mat x2, arma::vec y, arma::mat dMat, arma::mat dMat_rp, double bw, int kernel, bool adaptive);
 RcppExport SEXP GWmodel_gwr_mixed_2(SEXP x1SEXP, SEXP x2SEXP, SEXP ySEXP, SEXP dMatSEXP, SEXP dMat_rpSEXP, SEXP bwSEXP, SEXP kernelSEXP, SEXP adaptiveSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -759,7 +759,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat >::type dMat(dMatSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type dMat_rp(dMat_rpSEXP);
     Rcpp::traits::input_parameter< double >::type bw(bwSEXP);
-    Rcpp::traits::input_parameter< std::string >::type kernel(kernelSEXP);
+    Rcpp::traits::input_parameter< int >::type kernel(kernelSEXP);
     Rcpp::traits::input_parameter< bool >::type adaptive(adaptiveSEXP);
     rcpp_result_gen = Rcpp::wrap(gwr_mixed_2(x1, x2, y, dMat, dMat_rp, bw, kernel, adaptive));
     return rcpp_result_gen;

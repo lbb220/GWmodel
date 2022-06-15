@@ -3,7 +3,7 @@
 \alias{gwr.aic}
 \alias{gold}
 \alias{AICc_rss1}
-\alias{BIC}
+\alias{gw_BIC}
 \alias{e_vec}
 \alias{fitted}
 \alias{gw_cv_all}
